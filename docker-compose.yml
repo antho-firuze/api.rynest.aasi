@@ -1,0 +1,131 @@
+version: "3.8"
+services:
+  # PHP Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: app
+    container_name: app
+    restart: unless-stopped
+    tty: true
+    environment:
+      FCGI_HOST: 127.0.0.1
+      FCGI_PORT: 9000
+      PHP_FCGI_CHILDREN: 10
+      PHP_FCGI_MAX_REQUESTS: 1000
+      REDIS_HOST: 172.28.1.17
+      REDIS_PORT: 6379
+      REDIS_PASS: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+      - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    depends_on:
+      - webserver
+      - redis
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: 0.5
+    #       memory: 100M
+    #     reservations:
+    #       cpus: 0.25
+    #       memory: 45M
+    networks:
+      app-network:
+        ipv4_address: 172.28.1.20
+
+  # Nginx Service
+  webserver:
+    image: nginx:alpine
+    container_name: webserver
+    restart: always
+    tty: true
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./:/var/www
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf.d/:/etc/nginx/conf.d/
+      - ./certbot/conf/:/etc/letsencrypt
+      - ./certbot/data/:/var/www/public/letsencrypt
+    networks:
+      app-network:
+        ipv4_address: 172.28.1.19
+
+  # redis-overcommit-on-host
+  # redis-overcommit:
+  #   # build: https://github.com/bkuhl/redis-overcommit-on-host.git
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile-redis-overcommit
+  #   container_name: redis-overcommit
+  #   restart: "no"
+  #   privileged: true
+  #   volumes:
+  #     - /proc/sys/vm:/mnt/vm
+
+  # Redist Service
+  redis:
+    image: redis:alpine
+    container_name: redis
+    restart: unless-stopped
+    tty: true
+    ports:
+      - 6379:6379
+    working_dir: /data
+    volumes:
+      - redisdata:/data
+      - ./redis/redis.conf:/etc/redis/redis.conf
+    environment:
+      - REDIS_REPLICATION_MODE=master
+      - REDIS_HOST=127.0.0.1
+    networks:
+      app-network:
+        ipv4_address: 172.28.1.17
+    command:
+      [
+        "redis-server",
+        "/etc/redis/redis.conf",
+        "--appendonly",
+        "yes",
+        "--requirepass",
+        "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9",
+      ]
+    sysctls:
+      net.core.somaxconn: 65535
+    # depends_on:
+    #   - redis-overcommit
+
+  # Redist Commander
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-commander
+    environment:
+      - HTTP_USER=admin
+      - HTTP_PASSWORD=Ryn3st@134679
+      - REDIS_HOSTS=local:172.28.1.17:6379:0:eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9
+    ports:
+      - 8081:8081
+    depends_on:
+      - redis
+    networks:
+      app-network:
+        ipv4_address: 172.28.1.18
+
+# Docker Networks
+networks:
+  app-network:
+    # name: app-network
+    # driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
+
+# Volumes
+volumes:
+  redisdata:
+    driver: local

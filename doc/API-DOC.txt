@@ -1,0 +1,113 @@
+API URL: https://api.lsp-ps.id
+Format Request: POST
+Format Body: JSON =>
+Request JSON:
+ - id = alphanumeric, sebagai request identification
+ - lang = character, output bahasa 
+ - agent = character, device identification
+ - method = character, API Method
+ - params = JSON, API Method Parameters
+Response JSON:
+ - id = alphanumeric, sebagai request identification
+ - status = boolean, indikasi keberhasilan proses
+ - execution_time = numeric, waktu proses di server
+ - message = alphanumeric
+ - result = JSON, single atau multiple JSON object 
+
+Example: 
+1. Pemanggilan method auth.login
+Request:
+{
+	"id":715,
+	"lang":"id",
+	"agent":"android",
+	"method":"auth.login",
+	"params": {"username":"user","password":"pass"}
+}
+
+Response:
+{
+    "id": 715,
+    "status": false,
+    "execution_time": "0.6352",
+    "message": "Email atau Password salah, silahkan coba kembali"
+}
+
+2. Pemanggilan method exam.schedule
+Request:
+{
+	"id":715,
+	"lang":"id",
+	"agent":"android",
+	"method":"exam.schedule",
+	"params": {"username":"user","password":"pass"}
+}
+
+Response:
+{
+    "status": true,
+    "execution_time": "0.0815",
+    "result": {
+        "member_id": "S00002",
+        "schedule_request_id": "49",
+        "name": "sesi_1",
+        "date": "2019-10-22",
+        "pre": "08:00:00",
+        "begin": "09:00:00",
+        "duration": "60",
+        "notes": "N/A"
+    },
+    "id": 715
+}
+
+3. Pemanggilan method exam.activate
+Request:
+{
+	"id":775,
+	"lang":"id",
+	"agent":"android",
+	"method":"exam.activate",
+	"params": {"username":"user","password":"pass","card_no":"3174093686308150"}
+}
+
+Response:
+{
+    "id": 775,
+    "status": true,
+    "execution_time": "0.5352",
+    "result": {
+        "start_time": "2019-11-03 17:55:00"
+    }
+}
+
+4. Pemanggilan method exam.start
+Request:
+{
+	"id":775,
+	"lang":"id",
+	"agent":"android",
+	"method":"exam.start",
+	"params": {"username":"user","password":"pass","coordinate":"lat=-6.368850&long=106.877125","start_time":"2019-11-01 08:50:00"}
+}
+
+Response:
+{
+    "id": 775,
+    "status": true,
+    "execution_time": "0.5352",
+    "result": {
+        "start_time": "2019-11-03 17:55:00"
+    }
+}
+
+Published Method: 
+method name		params			
+-----------------------------------
+member.is_activated	phone,fullname,card_no
+member.activate		phone,fullname,card_no
+exam.login		username,password,date_client,time_client
+exam.start		username,password,coordinate,start_time
+exam.answer		username,password,question_id,answer_key
+exam.finish		username,password,coordinate,finish_time
+exam.question_all	username,password
+exam.check_score	username,password
