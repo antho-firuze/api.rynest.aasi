@@ -1,0 +1,52 @@
+FROM php:8.4-cli-alpine
+
+ENV TZ=Asia/Jakarta
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories \
+    && apk update --no-cache \
+    && apk add zlib-dev \
+    && apk add libpng-dev \
+    && apk add freetype-dev \
+    && apk add libjpeg-turbo-dev \
+    && docker-php-source extract \
+    && docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) pcntl pdo_mysql gd \
+    && docker-php-ext-enable opcache pcntl pdo_mysql gd \
+    && mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
+    && sed -i 's/post_max_size =.*/post_max_size = 50M/g' "$PHP_INI_DIR/php.ini" \
+    && sed -i 's/upload_max_filesize =.*/upload_max_filesize = 50M/g' "$PHP_INI_DIR/php.ini" \
+    && sed -i 's/;date.timezone =.*/date.timezone = PRC/g' "$PHP_INI_DIR/php.ini" \
+    && sed -i 's/short_open_tag =.*/short_open_tag = On/g' "$PHP_INI_DIR/php.ini" \
+    && sed -i 's/;cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/g' "$PHP_INI_DIR/php.ini" \
+    && sed -i 's/max_execution_time =.*/max_execution_time = 300/g' "$PHP_INI_DIR/php.ini" \
+    # && sed -i 's/disable_functions =.*/disable_functions = passthru,exec,system,chroot,chgrp,chown,shell_exec,proc_open,proc_get_status,popen,ini_alter,ini_restore,dl,openlog,syslog,readlink,symlink,popepassthru/g' "$PHP_INI_DIR/php.ini" \
+    # && php -r "copy('https://install.phpcomposer.com/installer', 'composer-setup.php');" \
+    # && php composer-setup.php \
+    # && php -r "unlink('composer-setup.php');" \
+    # && mv composer.phar /usr/local/bin/composer \
+    # && composer config -g repo.packagist composer https://mirrors.aliyun.com/composer/ \
+    && docker-php-source delete \
+    && rm -rf /var/cache/apk/*
+
+RUN apk add --no-cache $PHPIZE_DEPS openssl-dev
+
+RUN pecl install redis 
+RUN docker-php-ext-enable redis
+
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+
+
+# SET THE WORKING DIRECTORY
+WORKDIR /webman
+COPY ./webman .
+
+# OPENED PORT
+# ===========
+EXPOSE 8787
+
+# NEXT STEP AFTER INSTALL MANUAL : Uncomment below lines
+# ==============================
+RUN composer install
+CMD ["php", "start.php", "start"]
