@@ -3,8 +3,8 @@
 namespace app\api;
 
 use support\Request;
-use support\DB;
 use Firuze\Jwt\JwtToken;
+use support\Db;
 
 class Admin_v1
 {

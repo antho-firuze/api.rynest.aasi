@@ -31,6 +31,16 @@ return [
             'prefix'      => '',
             'strict'      => true,
             'engine'      => null,
+            'options' => [
+                PDO::ATTR_EMULATE_PREPARES => false, // It is necessary when using swoole or swow as the driver
+            ],
+            'pool' => [ // Connection pool configuration
+                'max_connections' => 5, // Maximum number of connections
+                'min_connections' => 1, // Minimum number of connections
+                'wait_timeout' => 3,    // Get the maximum time for the connection to wait from the connection pool, and an exception will be thrown after the timeout.Only valid in coroutine environments
+                'idle_timeout' => 60,   // The maximum idle time for connections in the connection pool, and the recycling will be closed after the timeout until the number of connections is min_connections
+                'heartbeat_interval' => 50, // Connection pool heartbeat detection time, unit seconds, recommended to be less than 60 seconds
+            ],
         ],
     ],
 ];

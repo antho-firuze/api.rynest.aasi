@@ -39,6 +39,8 @@ Berikut adalah langkah-langkah untuk menjalankan aplikasi ini menggunakan Docker
 
 - Buat file `.env` di folder `./webman`
 - Rename file `.env.example` manjadi `.env`. Dan isi dengan konfigurasi yang sesuai.
+- (optional) Untuk meng-copy vendor yang ada pada container ke local storage, jalankan perintah ini.
+  `# docker cp api-aasi:/webman/vendor ./webman`
 
 3. **Jalankan Docker Compose**:
 
@@ -58,6 +60,7 @@ Berikut adalah langkah-langkah untuk menjalankan aplikasi ini menggunakan Docker
 #
 
 ## Kontak
+
 Jika Anda memiliki pertanyaan atau masukan, silakan hubungi:
 
 - **Nama**: Ahmad Hertanto

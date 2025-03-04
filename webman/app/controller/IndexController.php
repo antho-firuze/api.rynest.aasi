@@ -2,6 +2,7 @@
 
 namespace app\controller;
 
+use support\Db;
 use support\Request;
 
 class IndexController
@@ -22,6 +23,8 @@ class IndexController
 
     public function json(Request $request)
     {
+        $user = Db::table('tbl_users')->first();
+        return json($user);
         return json(['code' => 0, 'msg' => 'ok']);
     }
 
