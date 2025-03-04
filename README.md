@@ -1,59 +1,65 @@
-<div style="padding:18px;max-width: 1024px;margin:0 auto;background-color:#fff;color:#333">
-<h1>webman</h1>
+# api.rynest.aasi
 
-基于<a href="https://www.workerman.net" target="__blank">workerman</a>开发的超高性能PHP框架
+**api.rynest.aasi** adalah sebuah aplikasi Web API yang dibangun menggunakan **Webman/Workerman** (framework PHP) dan menggunakan **MySQL** sebagai database. Aplikasi ini di-containerisasi menggunakan **Docker** untuk memudahkan deployment dan pengembangan.
 
+---
 
-<h1>学习</h1>
+## Fitur Utama
 
-<ul>
-  <li>
-    <a href="https://www.workerman.net/webman" target="__blank">主页 / Home page</a>
-  </li>
-  <li>
-    <a href="https://www.workerman.net/doc/webman" target="__blank">文档 / Document</a>
-  </li>
-  <li>
-    <a href="https://www.workerman.net/doc/webman/install.html" target="__blank">安装 / Install</a>
-  </li>
-  <li>
-    <a href="https://www.workerman.net/questions" target="__blank">问答 / Questions</a>
-  </li>
-  <li>
-    <a href="https://www.workerman.net/apps" target="__blank">市场 / Apps</a>
-  </li>
-  <li>
-    <a href="https://www.workerman.net/sponsor" target="__blank">赞助 / Sponsors</a>
-  </li>
-  <li>
-    <a href="https://www.workerman.net/doc/webman/thanks.html" target="__blank">致谢 / Thanks</a>
-  </li>
-</ul>
+- **Fitur 1**: Dibangun menggunakan teknologi PHP terbaru yang setara dengan GoLang.
+- **Fitur 2**: Penyimpanan asset dan media sudah menggunakan AWS S3.
+- **Fitur 3**: Optimalisasi coding di semua bagian terutama pada proses ujian sertifikasi.
+- Dan yang lainnya...
 
-<div style="float:left;padding-bottom:30px;">
+---
 
-  <h1>赞助商</h1>
+## Persyaratan Sistem
 
-  <h4>特别赞助</h4>
-  <a href="https://www.crmeb.com/?form=workerman" target="__blank">
-    <img src="https://www.workerman.net/img/sponsors/6429/20230719111500.svg" width="200">
-  </a>
+Sebelum menjalankan aplikasi ini, pastikan sistem Anda memenuhi persyaratan berikut:
 
-  <h4>铂金赞助</h4>
-  <a href="https://www.fadetask.com/?from=workerman" target="__blank"><img src="https://www.workerman.net/img/sponsors/1/20230719084316.png" width="200"></a>
-  <a href="https://www.yilianyun.net/?from=workerman" target="__blank" style="margin-left:20px;"><img src="https://www.workerman.net/img/sponsors/6218/20230720114049.png" width="200"></a>
+- **Docker**: Versi 20.x atau lebih baru.
+- **Docker Compose**: Versi 1.29.x atau lebih baru.
+- **RAM**: Minimal 2GB.
+- **Ruang Penyimpanan**: Minimal 1GB.
 
-  <h4>金牌赞助</h4>
+---
 
+## Instalasi dengan Docker
 
-</div>
+Berikut adalah langkah-langkah untuk menjalankan aplikasi ini menggunakan Docker:
 
+1. **Clone Repository**:
 
-<div style="clear: both">
-<h1>LICENSE</h1>
-The webman is open-sourced software licensed under the MIT.
-</div>
+   ```
+   git clone https://github.com/antho-firuze/api.rynest.aasi.git
+   cd api.rynest.aasi
+   ```
 
-</div>
+2. **Setup Environment**:
 
+- Buat file `.env` di folder `./webman`
+- Rename file `.env.example` manjadi `.env`. Dan isi dengan konfigurasi yang sesuai.
 
+3. **Jalankan Docker Compose**:
+
+   ```
+   # docker-compose up -d --build
+
+   atau
+
+   # docker compose up -d --build
+   ```
+
+4. **Akses Aplikasi**:
+
+- Web API akan berjalan di `http://localhost:8787`
+- Gunakan Postman atau sejenisnya untuk mengakses endpoint API.
+
+#
+
+## Kontak
+Jika Anda memiliki pertanyaan atau masukan, silakan hubungi:
+
+- **Nama**: Ahmad Hertanto
+- **Email**: [<antho.firuze@gmail.com>]
+- **Website**: [<https://www.aasi.or.id/>]
