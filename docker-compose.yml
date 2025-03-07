@@ -13,6 +13,19 @@ services:
       # This prevents the first volume from overriding the contents (especially for vendor folder).
       - /webman/vendor
 
+  nginx:
+    build:
+      context: ./
+      dockerfile: ./docker/nginx/nginx.docker
+    container_name: api-aasi-nginx
+    restart: always
+    tty: true
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./webman:/webman
+
   redis:
     image: redis:latest
     container_name: api-aasi-redis
