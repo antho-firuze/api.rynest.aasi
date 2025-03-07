@@ -34,7 +34,9 @@
     "aws/aws-sdk-php": "^3.340",
     "webman/database": "^2.1",
     "polarising/bcrypt": "^1.0",
-    "firuze/jwt": "^2.0"
+    "firuze/jwt": "^2.0",
+    "illuminate/events": "^11.44",
+    "webman/redis": "^2.1"
   },
   "suggest": {
     "ext-event": "For better performance. "

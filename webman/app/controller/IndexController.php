@@ -3,6 +3,7 @@
 namespace app\controller;
 
 use support\Db;
+use support\Redis;
 use support\Request;
 
 class IndexController
@@ -28,4 +29,9 @@ class IndexController
         return json(['code' => 0, 'msg' => 'ok']);
     }
 
+    public function redis(Request $request)
+    {
+        Redis::set('abc', 'cba');
+        return json(Redis::get('abc'));
+    }
 }
