@@ -3,9 +3,9 @@
 namespace app\api;
 
 use support\Request;
-use support\DB;
 use Firuze\Jwt\JwtToken;
 use Bcrypt\Bcrypt;
+use support\Db;
 use support\Email;
 use support\MyFunc;
 
