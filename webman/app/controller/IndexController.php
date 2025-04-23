@@ -34,4 +34,18 @@ class IndexController
         Redis::set('abc', 'cba');
         return json(Redis::get('abc'));
     }
+
+    public function crontest(Request $request)
+    {
+        // Cronjob for update an exam status where timed has been execeded, executed every minutes.
+        $exam_result = Db::table('exam_results')
+            ->select('*')
+            ->where('status', '=', '')
+            ->where('start_at', '<>', null)
+            ->where('finish_at', '=', null)
+            ->whereRaw('(start_at + INTERVAL duration MINUTE) > NOW()')
+            ->get();
+
+        return json($exam_result);
+    }
 }

@@ -338,7 +338,7 @@ class Auth_v1
         $data = $request->post();
         $is_testing = !isset($data['is_testing']) ? true : $data['is_testing'];
 
-        $user = Db::table('users')->where('email', $data['email'])->first();
+        $user = Db::table('tbl_users')->where('email', $data['email'])->first();
 
         // Unknown User
         if (!$user) {
@@ -348,7 +348,7 @@ class Auth_v1
 
         $code = MyFunc::generate_code();
 
-        Db::table('users')
+        Db::table('tbl_users')
             ->where('email', $user->email)
             ->update(['verify_code' => $code]);
 

@@ -3,6 +3,7 @@
  * Here is your custom functions.
  */
 
+use support\Request;
 use support\Response;
 
 /**
@@ -12,9 +13,9 @@ use support\Response;
  * @return Response
  */
 if (!function_exists('jsonr')) {
-    function jsonr($data, int $options = JSON_UNESCAPED_UNICODE): Response
+    function jsonr($data, int $status = 500, int $options = JSON_UNESCAPED_UNICODE): Response
     {
-        return new Response(500, ['Content-Type' => 'application/json'], json_encode($data, $options));
+        return new Response($status, ['Content-Type' => 'application/json'], json_encode($data, $options));
     }
 }
 
@@ -62,5 +63,34 @@ if (!function_exists('sprintfx')) {
             $arr[$prefix . $key . $suffix] = $val;
 
         return str_replace(array_keys($arr), array_values($arr), $str);
+    }
+}
+
+/**
+ * Check required params field
+ *
+ * @param string $str
+ * @param array $vars     Paired value array
+ * @param string $prefix  Default '{'
+ * @param string $suffix  Default '}'
+ * @return void
+ */
+if (!function_exists('require_params')) {
+    function require_params(Request $request, $fields = [])
+    {
+        $params = (object) $request->post();
+        $nfields = [];
+        foreach ($fields as $k => $v)
+            if (!isset($params->{$v}))
+                $nfields[] = $v;
+
+        // if (isset($request->params->{$v}) && $request->params->{$v} == '')
+        // 	$nfields[] = $v;
+
+        if ($nfields) {
+            return ["message" => implode(', ', $nfields)];
+        }
+
+        return TRUE;
     }
 }

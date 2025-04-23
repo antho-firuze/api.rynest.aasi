@@ -6,7 +6,7 @@ use Aws\AwsClient;
 use Aws\S3\Exception\S3Exception;
 use Aws\S3\S3Client;
 use support\Request;
-use support\DB;
+use support\Db;
 use Firuze\Jwt\JwtToken;
 use Illuminate\Support\Facades\Storage;
 use support\MyFunc;
@@ -34,7 +34,7 @@ class Member_v1
         // LAST STAGE (Output Process)
         // ===========================
         $result = (object) [];
-        $result->member = $member;
+        $result = $member;
         $result->company = $company;
         return json($result);
     }

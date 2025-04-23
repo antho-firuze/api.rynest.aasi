@@ -12,6 +12,7 @@
  * @license   http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
+use support\Request;
 use Webman\Route;
 
 Route::any('/', function () {
@@ -56,18 +57,38 @@ Route::group('/api/v1/exam', function () {
     Route::any('/', [app\api\Exam_v1::class, 'index']);
     Route::post('/schedule', [app\api\Exam_v1::class, 'schedule']);
     Route::post('/result', [app\api\Exam_v1::class, 'result']);
+    Route::post('/info', [app\api\Exam_v1::class, 'info']);
     Route::post('/start', [app\api\Exam_v1::class, 'start']);
     Route::post('/answer', [app\api\Exam_v1::class, 'answer']);
     Route::post('/check_score', [app\api\Exam_v1::class, 'check_score']);
     Route::post('/finish', [app\api\Exam_v1::class, 'finish']);
     Route::post('/question', [app\api\Exam_v1::class, 'question']);
+    Route::post('/questions', [app\api\Exam_v1::class, 'questions']);
     Route::post('/photos', [app\api\Exam_v1::class, 'photos']);
     Route::post('/upload_photo', [app\api\Exam_v1::class, 'upload_photo']);
 })->middleware([
     app\middleware\VerifyAPIToken::class,
 ]);
 
+Route::group('/api/v1/pusher', function () {
+    Route::any('/', [app\api\Pusher_v1::class, 'index']);
+    Route::post('/auth', [app\api\Pusher_v1::class, 'auth']);
+    Route::post('/trigger', [app\api\Pusher_v1::class, 'trigger']);
+    Route::post('/channels', [app\api\Pusher_v1::class, 'channels']);
+    Route::post('/channel_info', [app\api\Pusher_v1::class, 'channel_info']);
+    Route::post('/channel_info_users', [app\api\Pusher_v1::class, 'channel_info_users']);
+})->middleware([
+    app\middleware\VerifyAPIToken::class,
+]);
 
-
-
-
+Route::fallback(function (Request $request) {
+    // Return JSON for AJAX requests
+    $isTypeFormData = false !== strpos($request->header('Content-Type', ''), 'form-data');
+    $isTypeAppJson = false !== strpos($request->header('Content-Type', ''), 'json');
+    // return json($isTypeAppJson);
+    if ($request->expectsJson() || $isTypeFormData || $isTypeAppJson) {
+        return jsonr(['message' => '404 not found'], 404);
+    }
+    // Return the 404.html template for page requests
+    return view('404', ['error' => 'some error'])->withStatus(404);
+});

@@ -44,7 +44,7 @@ COPY ./webman .
 
 # OPENED PORT
 # ===========
-EXPOSE 8787
+EXPOSE 8787 3131 3232 8888
 
 # NEXT STEP AFTER INSTALL MANUAL : Uncomment below lines
 # ==============================

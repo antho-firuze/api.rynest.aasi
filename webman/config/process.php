@@ -19,6 +19,15 @@ use app\process\Http;
 global $argv;
 
 return [
+    'ws' => [
+        'listen' => 'websocket://0.0.0.0:8888',
+        'handler' => app\process\Pusher::class,
+        'count'       => 1, // Must be 1
+        'reloadable'  => false, // Execute RELOAD without restarting
+    ],
+    'task' => [
+        'handler' => app\process\Task::class,
+    ],
     'webman' => [
         'handler' => Http::class,
         'listen' => 'http://0.0.0.0:8787',

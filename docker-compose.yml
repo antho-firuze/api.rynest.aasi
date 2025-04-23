@@ -8,6 +8,9 @@ services:
     tty: true
     ports:
       - 8787:8787
+      - 3131:3131
+      - 3232:3232
+      - 8888:8888
     volumes:
       - ./webman:/webman
       # This prevents the first volume from overriding the contents (especially for vendor folder).
