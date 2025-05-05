@@ -54,46 +54,47 @@ class MyFunc
 
     static function upload_file(Request $request, $config = [])
     {
-        $protocol = $config['protocol'] ?? $request->header('x-forwarded-proto');
-        $protocol = $protocol ?? 'http';
         $folder = $config['folder'] ?? '';
         $userfile = $config['userfile'] ?? 'userfile';
         $allowed_types = $config['allowed_types'] ?? ['jpg', 'png', 'bmp', 'gif'];
-        $max_size = $config['max_size'] ?? 1000;     // in KB
+        $max_size = $config['max_size'] ?? 1000;     // in KB, default 1000KB = 1MB
 
         $file = $request->file($userfile);
-        $file_ext = $file->getUploadExtension();
+        if ($file == null) {
+            throw new Exception(message: "Param [{$userfile}] is required");
+        }
+        
         $file_size = $file->getSize() / 1000;  // convert to KB, actual in Bytes
-        if ($config['file_name'] == null) {
-            $file_name = $file->getUploadName();
-        } else {
-            $file_name = $config['file_name'];
-            $file_name = "{$file_name}.{$file_ext}";
+        if ($file_size < 1) {
+            throw new Exception(message: "[{$userfile}] must not empty");
+        } else if ($file_size > $max_size) {
+            throw new Exception(message: "[{$userfile}] file size not allowed, max size: {$max_size} KB");
         }
 
+        $file_ext = $file->getUploadExtension();
         if (!in_array($file_ext, $allowed_types)) {
-            $allowedtypes = implode(",", $allowed_types);
-            throw new Exception(message: "File extension not allowed, except: {$allowedtypes}.");
+            $allowedtypes = implode("|", $allowed_types);
+            throw new Exception(message: "[{$userfile}] file extension not allowed, except: [{$allowedtypes}]");
         }
 
-        if ($file_size > $max_size) {
-            throw new Exception(message: "File size not allowed, max size: {$max_size}KB");
-        }
+        $file_name = $config['file_name'] ?? $file->getUploadName();
+        $file_name = "{$file_name}.{$file_ext}";
 
-        if ($file && $file->isValid()) {
-            $relative_path = "{$folder}{$file_name}.{$file_ext}";
+        try {
+            $relative_path = "{$folder}{$file_name}";
 
             // Move file to destination folder
-            $upload_path = public_path(path: "{$folder}{$file_name}.{$file_ext}");
+            $upload_path = public_path(path: "{$folder}{$file_name}");
             $file->move($upload_path);
 
+            $protocol = $config['protocol'] ?? $request->header('x-forwarded-proto');
+            $protocol = $protocol ?? 'http';
             $host = $request->host();
-
             $result = "{$protocol}://{$host}/{$relative_path}";
             return $result;
+        } catch (\Throwable $e) {
+            throw new Exception(message: $e->getMessage());
         }
-
-        throw new Exception(message: 'File not found !');
     }
 
     static function upload_s3(Request $request, $config = [])
@@ -101,38 +102,40 @@ class MyFunc
         $folder = $config['folder'] ?? '';
         $userfile = $config['userfile'] ?? 'userfile';
         $allowed_types = $config['allowed_types'] ?? ['jpg', 'png', 'bmp', 'gif'];
-        $max_size = $config['max_size'] ?? 1000;     // in KB
+        $max_size = $config['max_size'] ?? 1000;     // in KB, default 1000KB = 1MB
 
         $file = $request->file($userfile);
-        $file_ext = $file->getUploadExtension();
+        if ($file == null) {
+            throw new Exception(message: "Param [{$userfile}] is required");
+        }
+
         $file_size = $file->getSize() / 1000;  // convert to KB, actual in Bytes
-        if ($config['file_name'] == null) {
-            $file_name = $file->getUploadName();
-        } else {
-            $file_name = $config['file_name'];
-            $file_name = "{$file_name}.{$file_ext}";
+        if ($file_size < 1) {
+            throw new Exception(message: "[{$userfile}] must not empty");
+        } else if ($file_size > $max_size) {
+            throw new Exception(message: "[{$userfile}] file size not allowed, max size: {$max_size} KB");
         }
 
+        $file_ext = $file->getUploadExtension();
         if (!in_array($file_ext, $allowed_types)) {
-            $allowedtypes = implode(",", $allowed_types);
-            throw new Exception(message: "File extension not allowed, except: {$allowedtypes}.");
+            $allowedtypes = implode("|", $allowed_types);
+            throw new Exception(message: "[{$userfile}] file extension not allowed, except: [{$allowedtypes}]");
         }
 
-        if ($file_size > $max_size) {
-            throw new Exception(message: "File size not allowed, max size: {$max_size}KB");
-        }
-
-        $aws_key = getenv('AWS_ACCESS_KEY_ID');
-        $aws_secret = getenv('AWS_SECRET_ACCESS_KEY');
-        $region = getenv('AWS_DEFAULT_REGION');
-        $bucket = getenv('AWS_BUCKET');
-
-        $s3 = new S3Client([
-            'region' => $region,
-            'credentials' => ['key' => $aws_key, 'secret' => $aws_secret]
-        ]);
+        $file_name = $config['file_name'] ?? $file->getUploadName();
+        $file_name = "{$file_name}.{$file_ext}";
 
         try {
+            $aws_key = getenv('AWS_ACCESS_KEY_ID');
+            $aws_secret = getenv('AWS_SECRET_ACCESS_KEY');
+            $region = getenv('AWS_DEFAULT_REGION');
+            $bucket = getenv('AWS_BUCKET');
+
+            $s3 = new S3Client([
+                'region' => $region,
+                'credentials' => ['key' => $aws_key, 'secret' => $aws_secret]
+            ]);
+
             if ($file && $file->isValid()) {
                 // Move file to temporary folder
                 // for getting mime/type (information file)

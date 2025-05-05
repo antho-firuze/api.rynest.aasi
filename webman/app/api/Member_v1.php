@@ -2,13 +2,11 @@
 
 namespace app\api;
 
-use Aws\AwsClient;
-use Aws\S3\Exception\S3Exception;
-use Aws\S3\S3Client;
 use support\Request;
 use support\Db;
 use Firuze\Jwt\JwtToken;
-use Illuminate\Support\Facades\Storage;
+use Respect\Validation\Validator as v;
+use Respect\Validation\Exceptions\NestedValidationException;
 use support\MyFunc;
 
 class Member_v1
@@ -28,8 +26,16 @@ class Member_v1
 
         // MIDDLE STAGE (Main Process)
         // ===========================
-        $member = Db::table('members')->where('user_id', $user_id)->first();
-        $company = Db::table('companies')->where('id', $member->company_id ?? null)->first();
+        Db::beginTransaction();
+        try {
+            $member = Db::table('members')->where('user_id', $user_id)->first();
+            $company = Db::table('companies')->where('id', $member->company_id ?? null)->first();
+
+            Db::commit();
+        } catch (\Throwable $th) {
+            Db::rollBack();
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+        }
 
         // LAST STAGE (Output Process)
         // ===========================
@@ -47,13 +53,21 @@ class Member_v1
 
         // MIDDLE STAGE (Main Process)
         // ===========================
-        $member = Db::table('members')->where('user_id', $user_id)->first();
+        Db::beginTransaction();
+        try {
+            $member = Db::table('members')->where('user_id', $user_id)->first();
 
-        $certificate = Db::table('exam_results_sertifikat')
-            ->selectRaw('no_sertifikat.id, no_sertifikat.no_sertifikat, exam_results_sertifikat.id_member, exam_results_sertifikat.realese_date, exam_results_sertifikat.expired_date')
-            ->join('no_sertifikat', 'exam_results_sertifikat.id_no_sertfikat', '=', 'no_sertifikat.id')
-            ->where('exam_results_sertifikat.id_member', $member->id)
-            ->first();
+            $certificate = Db::table('exam_results_sertifikat')
+                ->selectRaw('no_sertifikat.id, no_sertifikat.no_sertifikat, exam_results_sertifikat.id_member, exam_results_sertifikat.realese_date, exam_results_sertifikat.expired_date')
+                ->join('no_sertifikat', 'exam_results_sertifikat.id_no_sertfikat', '=', 'no_sertifikat.id')
+                ->where('exam_results_sertifikat.id_member', $member->id)
+                ->first();
+
+            Db::commit();
+        } catch (\Throwable $th) {
+            Db::rollBack();
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+        }
 
         // LAST STAGE (Output Process)
         // ===========================
@@ -66,12 +80,23 @@ class Member_v1
         // FIRST STAGE (Parameters)
         // ========================
         $data = (object) $request->post();
+        try {
+            $inputValidator = v::attribute('type', v::notEmpty());
+            $inputValidator->assert($data);
+        } catch (NestedValidationException $e) {
+            $errAttr = $e->getMessages([
+                'attribute' => 'Params [{{name}}] is required',
+                'notEmpty' => '[{{name}}] must not empty',
+            ]);
+            $errMessage = join(", ", (array) $errAttr['attribute']);
+            return jsonr(['message' => $errMessage]);
+        }
         $id_member = JwtToken::getExtendVal('id_member');
 
         $uploadType = ['idcard', 'selfie'];
         if (!in_array($data->type, $uploadType)) {
-            $uploadTypeStr = implode(',', $uploadType);
-            return jsonr(['message' => "Upload type is not defined, etc: {$uploadTypeStr}."]);
+            $uploadTypeStr = implode('|', $uploadType);
+            return jsonr(['message' => "[type] not allowed, except: [{$uploadTypeStr}]"]);
         }
         $type = $data->type;
 

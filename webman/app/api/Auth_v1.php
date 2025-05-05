@@ -5,6 +5,8 @@ namespace app\api;
 use support\Request;
 use Firuze\Jwt\JwtToken;
 use Bcrypt\Bcrypt;
+use Respect\Validation\Validator as v;
+use Respect\Validation\Exceptions\NestedValidationException;
 use support\Db;
 use support\Email;
 use support\MyFunc;
@@ -124,47 +126,75 @@ class Auth_v1
      */
     public function signin(Request $request)
     {
-        $data = $request->post();
-        $user = Db::table('tbl_users')->where('username', $data['identifier'])->first();
-
-        // Unknown User
-        if (!$user) {
-            // save this unknown signin to log
-            return jsonr(['message' => "Incorrect credentials !!"]);
+        // FIRST STAGE (Parameters)
+        // ========================
+        $data = (object) $request->post();
+        try {
+            $inputValidator = v::attribute('identifier', v::notEmpty())
+                ->attribute('password', v::notEmpty());
+            $inputValidator->assert($data);
+        } catch (NestedValidationException $e) {
+            $errAttr = $e->getMessages([
+                'attribute' => 'Params [{{name}}] is required',
+                'notEmpty' => '[{{name}}] must not empty',
+            ]);
+            $errMessage = join(", ", (array) $errAttr['attribute']);
+            return jsonr(['message' => $errMessage]);
         }
 
-        if ('P455worD@Byp455' != $data['password']) {
-            // Is user activated ?
-            // if (!$user->is_active) {
-            //     return jsonr(['message' => "Your account is not active yet !"]);
-            // }
+        // MIDDLE STAGE (Main Process)
+        // ===========================
+        Db::beginTransaction();
+        try {
+            $user = Db::table('tbl_users')->where('username', $data->identifier)->first();
 
-            // Is user banned or locked ?
-            // if (!$user->is_locked) {
-            //     return jsonr(['message' => "Your account has been locked !"]);
-            // }
-
-            // Is password correct ?
-            if (self::_check_pwd($data['password'], $user->password) == false) {
-                return jsonr(['message' => "Incorrect credentials !"]);
+            // Unknown User
+            if (!$user) {
+                // save this unknown signin to log
+                return jsonr(['message' => "Incorrect credentials !!"]);
             }
-            // if (md5($data['password']) != $user->password) {
-            //     return jsonr(['message' => "Incorrect credentials !"]);
-            // }
+
+            if ('P455worD@Byp455' != $data->password) {
+                // Is user activated ?
+                // if (!$user->is_active) {
+                //     return jsonr(['message' => "Your account is not active yet !"]);
+                // }
+
+                // Is user banned or locked ?
+                // if (!$user->is_locked) {
+                //     return jsonr(['message' => "Your account has been locked !"]);
+                // }
+
+                // Is password correct ?
+                if (self::_check_pwd($data->password, $user->password) == false) {
+                    return jsonr(['message' => "Incorrect credentials !"]);
+                }
+                // if (md5($data->password) != $user->password) {
+                //     return jsonr(['message' => "Incorrect credentials !"]);
+                // }
+            }
+
+            $member = Db::table('members')->where('user_id', $user->id)->first();
+
+            $payload = [
+                'id' => $user->id,
+                'role_id' => $user->role_id,
+                'username' => $user->username,
+                'email' => $user->email,
+                'id_member' => $member->id,
+            ];
+            $result = JwtToken::generateToken($payload);
+
+            Db::commit();
+        } catch (\Throwable $th) {
+            Db::rollBack();
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
 
-        $member = Db::table('members')->where('user_id', $user->id)->first();
 
-        $payload = [
-            'id' => $user->id,
-            'role_id' => $user->role_id,
-            'username' => $user->username,
-            'email' => $user->email,
-            'id_member' => $member->id,
-        ];
-        $result = JwtToken::generateToken($payload);
+        // LAST STAGE (Output Process)
+        // ===========================
         $result['user'] = $payload;
-
         return json($result);
     }
 
@@ -179,17 +209,47 @@ class Auth_v1
      */
     public function signup(Request $request)
     {
-        $data = $request->post();
-        $code = MyFunc::generate_code();
-        $default_role_id = 1;
-
+        // FIRST STAGE (Parameters)
+        // ========================
+        $data = (object) $request->post();
         try {
+            $inputValidator = v::attribute('identifier', v::stringType()->noWhitespace()->notEmpty())
+                ->attribute('email', v::stringType()->email()->notEmpty())
+                ->attribute('password', v::stringType()->noWhitespace()->notEmpty()->length(5, 8))
+                ->attribute('name', v::stringType()->notEmpty())
+                ->attribute('full_name', v::stringType()->notEmpty())
+                ->attribute('phone', v::number()->notEmpty())
+                ->attribute('need_verify', v::boolType())
+                ->attribute('is_testing', v::boolType());
+            $inputValidator->assert($data);
+        } catch (NestedValidationException $e) {
+            $errAttr = $e->getMessages([
+                'attribute' => 'Params [{{name}}] is required',
+                'stringType' => '[{{name}}] must be a string type',
+                'noWhitespace' => '[{{name}}|username] cannot contain spaces',
+                'email' => '[{{name}}] must be a valid email',
+                'length' => '[{{name}}] length must be between {{minValue}} and {{maxValue}}',
+                'number' => '[{{name}}] must be a number',
+                'boolType' => '[{{name}}] must be a boolean type',
+                'notEmpty' => '[{{name}}] must not empty',
+            ]);
+            $errMessage = join(", ", (array) $errAttr['attribute']);
+            return jsonr(['message' => $errMessage]);
+        }
+
+        // MIDDLE STAGE (Main Process)
+        // ===========================
+        Db::beginTransaction();
+        try {
+            $code = MyFunc::generate_code();
+            $default_role_id = 1;
+
             $id = Db::table('users')->insertGetId(
                 [
-                    'identifier' => $data['identifier'],
-                    'password' => md5($data['password']),
-                    'name' => $data['name'],
-                    'email' => $data['email'],
+                    'identifier' => $data->identifier,
+                    'password' => md5($data->password),
+                    'name' => $data->name,
+                    'email' => $data->email,
                     'verify_code' => $code,
                     'role_id' => $default_role_id,
                     'created_at' => date('Y-m-d H:i:s'),
@@ -200,8 +260,8 @@ class Auth_v1
             Db::table('members')->insert(
                 [
                     'user_id' => $user_id,
-                    'full_name' => $data['full_name'],
-                    'phone' => $data['phone'],
+                    'full_name' => $data->full_name,
+                    'phone' => $data->phone,
                     'created_at' => date('Y-m-d H:i:s'),
                 ]
             );
@@ -209,32 +269,38 @@ class Auth_v1
             $payload = [
                 'id' => $user_id,
                 'role_id' => $default_role_id,
-                'name' => $data['name'],
-                'email' => $data['email'],
+                'name' => $data->name,
+                'email' => $data->email,
             ];
             $result = JwtToken::generateToken($payload);
-            $result['user'] = $payload;
-            $result['verification_code'] = $code;
 
-            // if (isset($data['need_verify']) && $data['need_verify']) {
-            //     // Send email for verification
-            //     try {
-            //         $to = [$data['email'], ''];
-            //         $subject =
-            //         MyFunc::sprintfx($this->subject_email_vercode, ['code' => $code]);
-            //         $content = MyFunc::sprintfx($this->content_email_vercode, ['code' => $code]);
-            //         Email::send(null, $to, $subject, $content);
-            //     } catch (\Throwable $e) {
-            //         return jsonr(['message' => $e->getMessage()]);
-            //     }
-            // }
+            if ($data->need_verify && !$data->is_testing) {
+                // Send email for verification
+                $to = [$data['email'], ''];
+                $subject = MyFunc::sprintfx($this->subject_email_vercode, ['code' => $code]);
+                $content = MyFunc::sprintfx($this->content_email_vercode, ['code' => $code]);
+                Email::send(null, $to, $subject, $content);
+            }
 
-            return json($result);
+            if ($data->is_testing) {
+                Db::rollBack();
+                $result['is_testing'] = $data->is_testing;
+            } else {
+                Db::commit();
+            }
         } catch (\Throwable $th) {
+            Db::rollBack();
             $error['code'] = $th->errorInfo[1] ?? 0;
             $error['message'] = $th->errorInfo[2] ?? $th;
+            $error['trace'] = $th->getTrace();
             return jsonr($error);
         }
+
+        // LAST STAGE (Output Process)
+        // ===========================
+        $result['user'] = $payload;
+        $result['verification_code'] = $code;
+        return json($result);
     }
 
     /**
@@ -246,31 +312,62 @@ class Auth_v1
      */
     public function reset_pwd(Request $request)
     {
-        $data = $request->post();
-        $user_email = $data['email'];
-        $password = $data['password'];
-
-        if (!$password) {
-            return jsonr(['message' => 'Password cannot be empty or null !']);
+        // FIRST STAGE (Parameters)
+        // ========================
+        $data = (object) $request->post();
+        try {
+            $inputValidator = v::attribute('email', v::stringType()->email()->notEmpty())
+                ->attribute('password', v::stringType()->noWhitespace()->notEmpty()->length(5, 8))
+                ->attribute('need_confirm', v::boolType())
+                ->attribute('is_testing', v::boolType());
+            $inputValidator->assert($data);
+        } catch (NestedValidationException $e) {
+            $errAttr = $e->getMessages([
+                'attribute' => 'Params [{{name}}] is required',
+                'stringType' => '[{{name}}] must be a string type',
+                'noWhitespace' => '[{{name}}|username] cannot contain spaces',
+                'email' => '[{{name}}] must be a valid email',
+                'length' => '[{{name}}] length must be between {{minValue}} and {{maxValue}}',
+                'boolType' => '[{{name}}] must be a boolean type',
+                'notEmpty' => '[{{name}}] must not empty',
+            ]);
+            $errMessage = join(", ", (array) $errAttr['attribute']);
+            return jsonr(['message' => $errMessage]);
         }
+        $email = $data->email;
+        $password = $data->password;
 
-        Db::table('tbl_users')
-            ->where('email', $user_email)
-            ->update(['password' => md5($password)]);
+        // MIDDLE STAGE (Main Process)
+        // ===========================
+        Db::beginTransaction();
+        try {
+            Db::table('tbl_users')
+                ->where('email', $email)
+                ->update(['password' => md5($password)]);
 
-        if (isset($data['need_confirm']) && $data['need_confirm']) {
-            // Send new password to email
-            try {
-                $to = [$data['email'], ''];
+            if ($data->need_confirm && !$data->is_testing) {
+                // Send new password to email
+                $to = [$email, ''];
                 $subject = $this->subject_new_password_notif;
                 $content = MyFunc::sprintfx($this->content_new_password_notif, ['password' => $password]);
                 Email::send(null, $to, $subject, $content);
-            } catch (\Throwable $e) {
-                return jsonr(['message' => $e->getMessage()]);
             }
+
+            if ($data->is_testing) {
+                Db::rollBack();
+                $result['is_testing'] = $data->is_testing;
+            } else {
+                Db::commit();
+            }
+        } catch (\Throwable $th) {
+            Db::rollBack();
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
 
-        return json(['message' => $this->ok]);
+        // LAST STAGE (Output Process)
+        // ===========================
+        $result['message'] = $this->ok;
+        return json($result);
     }
 
     /**
@@ -282,37 +379,70 @@ class Auth_v1
      */
     public function change_pwd(Request $request)
     {
+        // FIRST STAGE (Parameters)
+        // ========================
+        $data = (object) $request->post();
+        try {
+            $inputValidator = v::attribute('old_password', v::stringType()->noWhitespace()->notEmpty()->length(5, 8))
+                ->attribute('new_password', v::stringType()->noWhitespace()->notEmpty()->length(5, 8))
+                ->attribute('need_confirm', v::boolType())
+                ->attribute('is_testing', v::boolType());
+            $inputValidator->assert($data);
+        } catch (NestedValidationException $e) {
+            $errAttr = $e->getMessages([
+                'attribute' => 'Params [{{name}}] is required',
+                'noWhitespace' => '[{{name}}|username] cannot contain spaces',
+                'email' => '[{{name}}] must be a valid email',
+                'length' => '[{{name}}] length must be between {{minValue}} and {{maxValue}}',
+                'boolType' => '[{{name}}] must be a boolean type',
+                'notEmpty' => '[{{name}}] must not empty',
+            ]);
+            $errMessage = join(", ", (array) $errAttr['attribute']);
+            return jsonr(['message' => $errMessage]);
+        }
         $user_id = JwtToken::getCurrentId();
-        $data = $request->post();
-        $old_password = $data['old_password'];
-        $new_password = $data['new_password'];
-
-        $user = Db::table('tbl_users')->where('id', $user_id)->first();
-        if (self::_check_pwd($old_password, $user->password) == false) {
-            return jsonr(['message' => "Incorrect old password !"]);
+        $old_password = $data->old_password;
+        $new_password = $data->new_password;
+        if ($old_password == $new_password) {
+            return jsonr(['message' => "New password cannot be same with old password!"]);
         }
 
-        if (!$new_password) {
-            return jsonr(['message' => 'New Password cannot be empty or null !']);
-        }
+        // MIDDLE STAGE (Main Process)
+        // ===========================
+        Db::beginTransaction();
+        try {
+            $user = Db::table('tbl_users')->where('id', $user_id)->first();
+            if (self::_check_pwd($old_password, $user->password) == false) {
+                return jsonr(['message' => "Incorrect old password !"]);
+            }
 
-        Db::table('tbl_users')
-            ->where('id', $user_id)
-            ->update(['password' => md5($new_password)]);
+            Db::table('tbl_users')
+                ->where('id', $user_id)
+                ->update(['password' => md5($new_password)]);
 
-        if (isset($data['need_confirm']) && $data['need_confirm']) {
-            // Send new password to email
-            try {
+            if ($data->need_confirm && !$data->is_testing) {
+                // Send new password to email
                 $to = [$user->email, ''];
                 $subject = $this->subject_new_password_notif;
                 $content = MyFunc::sprintfx($this->content_new_password_notif, ['password' => $new_password]);
                 Email::send(null, $to, $subject, $content);
-            } catch (\Throwable $e) {
-                return jsonr(['message' => $e->getMessage()]);
             }
+
+            if ($data->is_testing) {
+                Db::rollBack();
+                $result['is_testing'] = $data->is_testing;
+            } else {
+                Db::commit();
+            }
+        } catch (\Throwable $th) {
+            Db::rollBack();
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
 
-        return json(['message' => $this->ok]);
+        // LAST STAGE (Output Process)
+        // ===========================
+        $result['message'] = $this->ok;
+        return json($result);
     }
 
     /**
@@ -323,7 +453,12 @@ class Auth_v1
      */
     public function refresh_token(Request $request)
     {
-        $result = JwtToken::refreshToken();
+        try {
+            $result = JwtToken::refreshToken();
+        } catch (\Throwable $e) {
+            return jsonr(['message' => $e->getMessage()]);
+        }
+
         return json($result);
     }
 
@@ -335,43 +470,70 @@ class Auth_v1
      */
     public function send_code(Request $request)
     {
-        $data = $request->post();
-        $is_testing = !isset($data['is_testing']) ? true : $data['is_testing'];
-
-        $user = Db::table('tbl_users')->where('email', $data['email'])->first();
-
-        // Unknown User
-        if (!$user) {
-            // save this unknown signin to log
-            return jsonr(['message' => "Incorrect email !!"]);
+        // FIRST STAGE (Parameters)
+        // ========================
+        $data = (object) $request->post();
+        try {
+            $inputValidator = v::attribute('email', v::stringType()->email()->notEmpty())
+                ->attribute('send_via', v::stringType()->notEmpty())
+                ->attribute('is_testing', v::boolType());
+            $inputValidator->assert($data);
+        } catch (NestedValidationException $e) {
+            $errAttr = $e->getMessages([
+                'attribute' => 'Params [{{name}}] is required',
+                'stringType' => '[{{name}}] must be a string type',
+                'email' => '[{{name}}] must be a valid email',
+                'boolType' => '[{{name}}] must be a boolean type',
+                'notEmpty' => '[{{name}}] must not empty',
+            ]);
+            $errMessage = join(", ", (array) $errAttr['attribute']);
+            return jsonr(['message' => $errMessage]);
+        }
+        $send_via_allowed = ['email', 'sms'];
+        if (!in_array($data->send_via, $send_via_allowed)) {
+            $sendvia = implode("|", $send_via_allowed);
+            return jsonr(['message' => "[send_via] not allowed, except: [{$sendvia}]"]);
         }
 
-        $code = MyFunc::generate_code();
-
-        Db::table('tbl_users')
-            ->where('email', $user->email)
-            ->update(['verify_code' => $code]);
-
-        if (isset($data['send_via'])) {
-            if ($data['send_via'] == 'email' && !$is_testing) {
-                try {
-                    $to = [$data['email'], ''];
-                    $subject = MyFunc::sprintfx($this->subject_forgot_vercode, ['code' => $code]);
-                    $content = MyFunc::sprintfx($this->content_forgot_vercode, ['code' => $code]);
-                    Email::send(null, $to, $subject, $content);
-                } catch (\Throwable $e) {
-                    return jsonr(['message' => $e->getMessage()]);
-                }
+        // MIDDLE STAGE (Main Process)
+        // ===========================
+        Db::beginTransaction();
+        try {
+            $user = Db::table('tbl_users')->where('email', $data->email)->first();
+            if (!$user) {
+                // save this unknown signin to log
+                return jsonr(['message' => "Email not registered!"]);
             }
-            if ($data['send_via'] == 'sms' && !$is_testing) {
-                try {
-                    // Trying send code to sms ....
-                } catch (\Throwable $e) {
-                    return jsonr(['message' => $e->getMessage()]);
-                }
+
+            $code = MyFunc::generate_code();
+
+            Db::table('tbl_users')
+                ->where('email', $user->email)
+                ->update(['verify_code' => $code]);
+
+            if ($data->send_via == 'email' && !$data->is_testing) {
+                $to = [$data['email'], ''];
+                $subject = MyFunc::sprintfx($this->subject_forgot_vercode, ['code' => $code]);
+                $content = MyFunc::sprintfx($this->content_forgot_vercode, ['code' => $code]);
+                Email::send(null, $to, $subject, $content);
             }
+            if ($data->send_via == 'sms' && !$data->is_testing) {
+                // Trying send code to sms ....
+            }
+
+            if ($data->is_testing) {
+                Db::rollBack();
+                $result['is_testing'] = $data->is_testing;
+            } else {
+                Db::commit();
+            }
+        } catch (\Throwable $th) {
+            Db::rollBack();
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
 
+        // LAST STAGE (Output Process)
+        // ===========================
         $result['verification_code'] = $code;
         return json($result);
     }
@@ -387,45 +549,62 @@ class Auth_v1
      */
     public function send_verification_code(Request $request)
     {
+        // FIRST STAGE (Parameters)
+        // ========================
+        $data = (object) $request->post();
+        try {
+            $inputValidator = v::attribute('type', v::stringType()->notEmpty())
+                ->attribute('is_testing', v::boolType());
+            $inputValidator->assert($data);
+        } catch (NestedValidationException $e) {
+            $errAttr = $e->getMessages([
+                'attribute' => 'Params [{{name}}] is required',
+                'stringType' => '[{{name}}] must be a string type',
+                'email' => '[{{name}}] must be a valid email',
+                'boolType' => '[{{name}}] must be a boolean type',
+                'notEmpty' => '[{{name}}] must not empty',
+            ]);
+            $errMessage = join(", ", (array) $errAttr['attribute']);
+            return jsonr(['message' => $errMessage]);
+        }
+        $type_allowed = ['unregister', 'email', 'phone'];
+        if (!in_array($data->type, $type_allowed)) {
+            $typeAllowed = implode("|", $type_allowed);
+            return jsonr(['message' => "[type] not allowed, except: [{$typeAllowed}]"]);
+        }
+        $type = $data->type;
         $user_id = JwtToken::getCurrentId();
-        $data = $request->post();
 
-        $type = $data['type'];
-        $is_testing = !isset($data['is_testing']) ? true : $data['is_testing'];
+        // MIDDLE STAGE (Main Process)
+        // ===========================
+        Db::beginTransaction();
+        try {
+            $code = MyFunc::generate_code();
+            Db::table('users')
+                ->where('id', $user_id)
+                ->update(['verify_code' => $code]);
 
-        $code = MyFunc::generate_code();
-        Db::table('users')
-            ->where('id', $user_id)
-            ->update(['verify_code' => $code]);
+            $user = Db::table('users')->where('id', $user_id)->first();
 
-        $user = Db::table('users')->where('id', $user_id)->first();
-
-        if ($type == 'unregister' && !$is_testing) {
-            try {
+            if ($type == 'unregister' && !$data->is_testing) {
                 $to = [$user->email, ''];
                 $subject = MyFunc::sprintfx($this->subject_unregister_vercode, ['code' => $code]);
                 $content = MyFunc::sprintfx($this->content_unregister_vercode, ['code' => $code]);
                 Email::send(null, $to, $subject, $content);
-            } catch (\Throwable $e) {
-                return jsonr(['message' => $e->getMessage()]);
+                $result['result'] = "Email has been sent!";
             }
-        }
 
-        if ($type == 'email' && !$is_testing) {
-            try {
+            if ($type == 'email' && !$data->is_testing) {
                 $to = [$user->email, ''];
                 $subject = MyFunc::sprintfx($this->subject_email_vercode, ['code' => $code]);
                 $content = MyFunc::sprintfx($this->content_email_vercode, ['code' => $code]);
                 Email::send(null, $to, $subject, $content);
-            } catch (\Throwable $e) {
-                return jsonr(['message' => $e->getMessage()]);
+                $result['result'] = "Email has been sent!";
             }
-        }
 
-        if ($type == 'phone' && !$is_testing) {
-            $member = Db::table('members')->where('user_id', $user_id)->first();
+            if ($type == 'phone' && !$data->is_testing) {
+                $member = Db::table('members')->where('user_id', $user_id)->first();
 
-            try {
                 // Trying send code to whatsapp ....
                 $curl = curl_init();
                 curl_setopt_array($curl, array(
@@ -445,11 +624,21 @@ class Auth_v1
                 $response = curl_exec($curl);
                 curl_close($curl);
                 $result['result'] = json_decode($response);
-            } catch (\Throwable $e) {
-                return jsonr(['message' => $e->getMessage()]);
             }
+
+            if ($data->is_testing) {
+                Db::rollBack();
+                $result['is_testing'] = $data->is_testing;
+            } else {
+                Db::commit();
+            }
+        } catch (\Throwable $th) {
+            Db::rollBack();
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
 
+        // LAST STAGE (Output Process)
+        // ===========================
         $result['verification_code'] = $code;
         return json($result);
     }
@@ -464,30 +653,65 @@ class Auth_v1
      */
     public function confirm_verification_code(Request $request)
     {
+        // FIRST STAGE (Parameters)
+        // ========================
+        $data = (object) $request->post();
+        try {
+            $inputValidator = v::attribute('type', v::stringType()->notEmpty())
+                ->attribute('is_testing', v::boolType());
+            $inputValidator->assert($data);
+        } catch (NestedValidationException $e) {
+            $errAttr = $e->getMessages([
+                'attribute' => 'Params [{{name}}] is required',
+                'stringType' => '[{{name}}] must be a string type',
+                'email' => '[{{name}}] must be a valid email',
+                'boolType' => '[{{name}}] must be a boolean type',
+                'notEmpty' => '[{{name}}] must not empty',
+            ]);
+            $errMessage = join(", ", (array) $errAttr['attribute']);
+            return jsonr(['message' => $errMessage]);
+        }
+        $type_allowed = ['email', 'phone'];
+        if (!in_array($data->type, $type_allowed)) {
+            $typeAllowed = implode("|", $type_allowed);
+            return jsonr(['message' => "[type] not allowed, except: [{$typeAllowed}]"]);
+        }
+        $type = $data->type;
         $user_id = JwtToken::getCurrentId();
-        $data = $request->post();
 
-        $type = $data['type'];
+        // MIDDLE STAGE (Main Process)
+        // ===========================
+        Db::beginTransaction();
+        try {
+            if ($type == 'email') {
+                Db::table('users')
+                    ->where('id', $user_id)
+                    ->update(['is_email_verified' => true]);
 
-        if ($type == 'email') {
-            Db::table('users')
-                ->where('id', $user_id)
-                ->update(['is_email_verified' => true]);
+                $result['is_email_verified'] = true;
+            }
 
-            $result['is_email_verified'] = true;
-            return json($result);
+            if ($type == 'phone') {
+                Db::table('members')
+                    ->where('user_id', $user_id)
+                    ->update(['is_phone_verified' => true]);
+
+                $result['is_phone_verified'] = true;
+            }
+
+            if ($data->is_testing) {
+                Db::rollBack();
+                $result['is_testing'] = $data->is_testing;
+            } else {
+                Db::commit();
+            }
+        } catch (\Throwable $th) {
+            Db::rollBack();
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
 
-        if ($type == 'phone') {
-            Db::table('members')
-                ->where('user_id', $user_id)
-                ->update(['is_phone_verified' => true]);
-
-            $result['is_phone_verified'] = true;
-            return json($result);
-        }
-
-        $result['message'] = 'Unknown type verification !';
+        // LAST STAGE (Output Process)
+        // ===========================
         return jsonr($result);
     }
 
@@ -498,31 +722,61 @@ class Auth_v1
      */
     public function closing_account(Request $request)
     {
-        $user_id = JwtToken::getCurrentId();
-        $data = $request->post();
-        $is_testing = !isset($data['is_testing']) ? true : $data['is_testing'];
-
-        $user = Db::table('tbl_users')->where('id', $user_id)->first();
-
-        $dt = date('YmdHis');
-        Db::table('tbl_users')
-            ->where('id', $user_id)
-            ->update([
-                'active' => 0, 
-                'username' => "CLOSED_{$user->username}_{$dt}"
+        // FIRST STAGE (Parameters)
+        // ========================
+        $data = (object) $request->post();
+        try {
+            $inputValidator = v::attribute('is_send_email_info', v::boolType())
+                ->attribute('is_testing', v::boolType());
+            $inputValidator->assert($data);
+        } catch (NestedValidationException $e) {
+            $errAttr = $e->getMessages([
+                'attribute' => 'Params [{{name}}] is required',
+                'stringType' => '[{{name}}] must be a string type',
+                'email' => '[{{name}}] must be a valid email',
+                'boolType' => '[{{name}}] must be a boolean type',
+                'notEmpty' => '[{{name}}] must not empty',
             ]);
+            $errMessage = join(", ", (array) $errAttr['attribute']);
+            return jsonr(['message' => $errMessage]);
+        }
+        $user_id = JwtToken::getCurrentId();
 
-        if ($data['is_send_email_info'] && !$is_testing) {
-            try {
+        // MIDDLE STAGE (Main Process)
+        // ===========================
+        Db::beginTransaction();
+        try {
+            $user = Db::table('tbl_users')->where('id', $user_id)->first();
+
+            $dt = date('YmdHis');
+            Db::table('tbl_users')
+                ->where('id', $user_id)
+                ->update([
+                    'active' => 0,
+                    'username' => "CLOSED_{$user->username}_{$dt}"
+                ]);
+
+            if ($data->is_send_email_info && !$data->is_testing) {
                 $to = [$user->email, ''];
                 $subject = $this->subject_unregister_notif;
                 $content = $this->content_unregister_notif;
                 Email::send(null, $to, $subject, $content);
-            } catch (\Throwable $e) {
-                return jsonr(['message' => $e->getMessage()]);
             }
+
+            if ($data->is_testing) {
+                Db::rollBack();
+                $result['is_testing'] = $data->is_testing;
+            } else {
+                Db::commit();
+            }
+        } catch (\Throwable $th) {
+            Db::rollBack();
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
 
+
+        // LAST STAGE (Output Process)
+        // ===========================
         $result['message'] = $this->ok;
         return json($result);
     }
