@@ -37,7 +37,8 @@
     "webman/push": "^1.0",
     "webman/database": "^2.1",
     "webman/redis": "^2.1",
-    "workerman/validation": "^3.1"
+    "workerman/validation": "^3.1",
+    "webman/redis-queue": "^2.1"
   },
   "suggest": {
     "ext-event": "For better performance. "

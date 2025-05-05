@@ -10,6 +10,7 @@ use Respect\Validation\Exceptions\NestedValidationException;
 use support\Db;
 use support\Email;
 use support\MyFunc;
+use Webman\RedisQueue\Redis;
 
 class Auth_v1
 {
@@ -96,7 +97,7 @@ class Auth_v1
     /**
      * Methods that do not require login
      */
-    protected $noNeedLogin = ['index', 'signin', 'signup', 'reset_pwd', 'send_code', 'resend_code', 'refresh_token', 'verify_code'];
+    protected $noNeedLogin = ['index', 'signin', 'signup', 'reset_pwd', 'send_forgot_code', 'refresh_token', 'verify_code'];
 
     public function index(Request $request)
     {
@@ -276,7 +277,7 @@ class Auth_v1
 
             if ($data->need_verify && !$data->is_testing) {
                 // Send email for verification
-                $to = [$data['email'], ''];
+                $to = [$data->email, ''];
                 $subject = MyFunc::sprintfx($this->subject_email_vercode, ['code' => $code]);
                 $content = MyFunc::sprintfx($this->content_email_vercode, ['code' => $code]);
                 Email::send(null, $to, $subject, $content);
@@ -347,10 +348,16 @@ class Auth_v1
 
             if ($data->need_confirm && !$data->is_testing) {
                 // Send new password to email
-                $to = [$email, ''];
+                $queue = 'send-mail';
                 $subject = $this->subject_new_password_notif;
                 $content = MyFunc::sprintfx($this->content_new_password_notif, ['password' => $password]);
-                Email::send(null, $to, $subject, $content);
+                $dataMail = ['to' => $data->email, 'subject' => $subject, 'content' => $content];
+                $rQueue = Redis::send($queue, $dataMail);
+
+                // $to = [$email, ''];
+                // $subject = $this->subject_new_password_notif;
+                // $content = MyFunc::sprintfx($this->content_new_password_notif, ['password' => $password]);
+                // Email::send(null, $to, $subject, $content);
             }
 
             if ($data->is_testing) {
@@ -468,13 +475,14 @@ class Auth_v1
      * @param string $email    email
      * @return json
      */
-    public function send_code(Request $request)
+    public function send_forgot_code(Request $request)
     {
         // FIRST STAGE (Parameters)
         // ========================
         $data = (object) $request->post();
         try {
             $inputValidator = v::attribute('email', v::stringType()->email()->notEmpty())
+                ->attribute('phone')
                 ->attribute('send_via', v::stringType()->notEmpty())
                 ->attribute('is_testing', v::boolType());
             $inputValidator->assert($data);
@@ -489,10 +497,15 @@ class Auth_v1
             $errMessage = join(", ", (array) $errAttr['attribute']);
             return jsonr(['message' => $errMessage]);
         }
-        $send_via_allowed = ['email', 'sms'];
+        $send_via_allowed = ['email', 'sms', 'wa', 'telegram'];
         if (!in_array($data->send_via, $send_via_allowed)) {
             $sendvia = implode("|", $send_via_allowed);
             return jsonr(['message' => "[send_via] not allowed, except: [{$sendvia}]"]);
+        } else if (in_array($data->send_via, ['sms', 'wa', 'telegram'])) {
+            $sendvia = implode("|", ['sms', 'wa', 'telegram']);
+            if (!$data->phone) {
+                return jsonr(['message' => "[phone] must be supplied for send via: [{$sendvia}]"]);
+            }
         }
 
         // MIDDLE STAGE (Main Process)
@@ -506,16 +519,21 @@ class Auth_v1
             }
 
             $code = MyFunc::generate_code();
-
             Db::table('tbl_users')
                 ->where('email', $user->email)
                 ->update(['verify_code' => $code]);
 
             if ($data->send_via == 'email' && !$data->is_testing) {
-                $to = [$data['email'], ''];
+                $queue = 'send-mail';
                 $subject = MyFunc::sprintfx($this->subject_forgot_vercode, ['code' => $code]);
                 $content = MyFunc::sprintfx($this->content_forgot_vercode, ['code' => $code]);
-                Email::send(null, $to, $subject, $content);
+                $dataMail = ['to' => $data->email, 'subject' => $subject, 'content' => $content];
+                $rQueue = Redis::send($queue, $dataMail);
+
+                // $to = [$data->email, ''];
+                // $subject = MyFunc::sprintfx($this->subject_forgot_vercode, ['code' => $code]);
+                // $content = MyFunc::sprintfx($this->content_forgot_vercode, ['code' => $code]);
+                // Email::send(null, $to, $subject, $content);
             }
             if ($data->send_via == 'sms' && !$data->is_testing) {
                 // Trying send code to sms ....
@@ -579,26 +597,36 @@ class Auth_v1
         // ===========================
         Db::beginTransaction();
         try {
+            $user = Db::table('tbl_users')->where('id', $user_id)->first();
+            
             $code = MyFunc::generate_code();
-            Db::table('users')
+            Db::table('tbl_users')
                 ->where('id', $user_id)
                 ->update(['verify_code' => $code]);
 
-            $user = Db::table('users')->where('id', $user_id)->first();
-
             if ($type == 'unregister' && !$data->is_testing) {
-                $to = [$user->email, ''];
+                $queue = 'send-mail';
                 $subject = MyFunc::sprintfx($this->subject_unregister_vercode, ['code' => $code]);
                 $content = MyFunc::sprintfx($this->content_unregister_vercode, ['code' => $code]);
-                Email::send(null, $to, $subject, $content);
+                $dataMail = ['to' => $user->email, 'subject' => $subject, 'content' => $content];
+                $rQueue = Redis::send($queue, $dataMail);
+                // $to = [$user->email, ''];
+                // $subject = MyFunc::sprintfx($this->subject_unregister_vercode, ['code' => $code]);
+                // $content = MyFunc::sprintfx($this->content_unregister_vercode, ['code' => $code]);
+                // Email::send(null, $to, $subject, $content);
                 $result['result'] = "Email has been sent!";
             }
 
             if ($type == 'email' && !$data->is_testing) {
-                $to = [$user->email, ''];
+                $queue = 'send-mail';
                 $subject = MyFunc::sprintfx($this->subject_email_vercode, ['code' => $code]);
                 $content = MyFunc::sprintfx($this->content_email_vercode, ['code' => $code]);
-                Email::send(null, $to, $subject, $content);
+                $dataMail = ['to' => $user->email, 'subject' => $subject, 'content' => $content];
+                $rQueue = Redis::send($queue, $dataMail);
+                // $to = [$user->email, ''];
+                // $subject = MyFunc::sprintfx($this->subject_email_vercode, ['code' => $code]);
+                // $content = MyFunc::sprintfx($this->content_email_vercode, ['code' => $code]);
+                // Email::send(null, $to, $subject, $content);
                 $result['result'] = "Email has been sent!";
             }
 
@@ -757,10 +785,15 @@ class Auth_v1
                 ]);
 
             if ($data->is_send_email_info && !$data->is_testing) {
-                $to = [$user->email, ''];
+                $queue = 'send-mail';
                 $subject = $this->subject_unregister_notif;
                 $content = $this->content_unregister_notif;
-                Email::send(null, $to, $subject, $content);
+                $dataMail = ['to' => $user->email, 'subject' => $subject, 'content' => $content];
+                $rQueue = Redis::send($queue, $dataMail);
+                // $to = [$user->email, ''];
+                // $subject = $this->subject_unregister_notif;
+                // $content = $this->content_unregister_notif;
+                // Email::send(null, $to, $subject, $content);
             }
 
             if ($data->is_testing) {
