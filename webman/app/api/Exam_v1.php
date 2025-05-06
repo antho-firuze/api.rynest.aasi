@@ -869,12 +869,10 @@ class Exam_v1
             // Update field [sync_question] on table exam_results, with question_id
             $sync_question = $data->sync_question ?? false;
             if ($sync_question) {
-                $count = Db::table('exam_results')
-                    ->where('schedule_request_id', $data->schedule_request_id)
-                    ->where('id_member', $id_member)
-                    ->update([
-                        'sync_question' => $data->question_id,
-                    ]);
+                $dataQueue['schedule_request_id'] = $data->schedule_request_id;
+                $dataQueue['id_member'] = $id_member;
+                $dataQueue['sync_question'] = $data->question_id;
+                Redis::send('sync-question', $dataQueue);
             }
 
             Db::commit();
