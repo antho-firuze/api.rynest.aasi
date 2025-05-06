@@ -16,12 +16,18 @@ class MySendMail implements Consumer
     // Consumption
     public function consume($data)
     {
-        $to = $data['to'];
-        $subject = $data['subject'];
-        $content = $data['content'];
-        Email::send(null, $to, $subject, $content);
+        try {
+            $to = $data['to'];
+            $subject = $data['subject'];
+            $content = $data['content'];
+            Email::send(null, $to, $subject, $content);
+
+            var_export("Sending mail success !\n");
+        } catch (\Throwable $th) {
+            var_export($th->getMessage());
+        }
 
         // No need for deserialization
-        var_export($data); // Outputs ['to' => 'tom@gmail.com', 'content' => 'hello']
+        // var_export($data); // Outputs ['to' => 'tom@gmail.com', 'content' => 'hello']
     }
 }

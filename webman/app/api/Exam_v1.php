@@ -872,7 +872,7 @@ class Exam_v1
             if ($sync_question) {
                 $dataQueue['schedule_request_id'] = $data->schedule_request_id;
                 $dataQueue['id_member'] = $id_member;
-                $dataQueue['sync_question'] = $data->question_id;
+                $dataQueue['question_id'] = $data->question_id;
                 RedisQueue::send('sync-question', $dataQueue);
             }
 
