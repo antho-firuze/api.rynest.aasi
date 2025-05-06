@@ -2,6 +2,7 @@
 
 namespace app\queue\redis;
 
+use support\Email;
 use Webman\RedisQueue\Consumer;
 
 class MySendMail implements Consumer
@@ -15,6 +16,11 @@ class MySendMail implements Consumer
     // Consumption
     public function consume($data)
     {
+        $to = $data['to'];
+        $subject = $data['subject'];
+        $content = $data['content'];
+        Email::send(null, $to, $subject, $content);
+
         // No need for deserialization
         var_export($data); // Outputs ['to' => 'tom@gmail.com', 'content' => 'hello']
     }
