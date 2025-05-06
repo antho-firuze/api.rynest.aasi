@@ -239,12 +239,12 @@ class Exam_v1
             $exam_result->score = "{$score}/{$exam_result->questions}";
             $desc1 = $score >= $category->passed_grade ? 'LULUS' : 'GAGAL';
 
-            // Update field check Score
-            $count = Db::table('exam_results')
-                ->where('id', $exam_result->id)
-                ->update([
-                    'score' => $exam_result->score,
-                ]);
+            // // Update field check Score
+            // $count = Db::table('exam_results')
+            //     ->where('id', $exam_result->id)
+            //     ->update([
+            //         'score' => $exam_result->score,
+            //     ]);
 
             // Exam real time duration
             $real_duration = '';
@@ -275,6 +275,13 @@ class Exam_v1
                     $photo_finish = true;
                 }
             }
+
+            // Update field check Score
+            $count = Db::table('exam_results')
+                ->where('id', $exam_result->id)
+                ->update([
+                    'score' => $exam_result->score,
+                ]);
 
             Db::commit();
         } catch (\Throwable $th) {
