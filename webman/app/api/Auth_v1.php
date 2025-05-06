@@ -27,11 +27,11 @@ class Auth_v1
         <p style='font-size: 20px; font-weight: bold; line-height: 20px;'>
             {code}
         </p>
-        <p>Terima kasih telah bergabung pada Amoora Travel. </p>
+        <p>Terima kasih telah bergabung pada Asosiasi Asuransi Syariah Indonesia (AASI). </p>
         <p>
             Salam,
             <br>
-            <b>Amoora Travel</b>
+            <b>Asosiasi Asuransi Syariah Indonesia (AASI)</b>
         </p>
         <br><br>
         ";
@@ -44,7 +44,7 @@ class Auth_v1
         <p>
             Salam,
             <br>
-            <b>Amoora Travel</b>
+            <b>Asosiasi Asuransi Syariah Indonesia (AASI)</b>
         </p>
         <br><br>
         ";
@@ -60,21 +60,21 @@ class Auth_v1
         <p>
             Salam,
             <br>
-            <b>Amoora Travel</b>
+            <b>Asosiasi Asuransi Syariah Indonesia (AASI)</b>
         </p>
         <br><br>
         ";
     public $content_unregister_notif = "
         <p>Assalamu'alaikum, </p>
-        <p>Ini adalah email notifikasi yang menyatakan bahwa akun anda di Aplikasi Amoora Travel telah sengaja di TUTUP.</p>
+        <p>Ini adalah email notifikasi yang menyatakan bahwa akun anda di Aplikasi Asosiasi Asuransi Syariah Indonesia (AASI) telah sengaja di TUTUP.</p>
         <p>Dan akan kami pastikan data-data anda akan sepenuhnya di hapus dari sistem kami.</p>
-        <p>Terima kasih yang mendalam dari kami, Tim Amoora Travel dan sampai berjumpa kembali.</p>
+        <p>Terima kasih yang mendalam dari kami, Tim AASI dan sampai berjumpa kembali.</p>
         <p>Note:</p>
         <p>Jika Anda ingin meng-aktifkan kembali akun anda, silahkan hubungi Customer Service kami.</p>
         <p>
             Salam,
             <br>
-            <b>Amoora Travel</b>
+            <b>Asosiasi Asuransi Syariah Indonesia (AASI)</b>
         </p>
         <br><br>
         ";
@@ -89,7 +89,7 @@ class Auth_v1
         <p>
             Salam,
             <br>
-            <b>Amoora Travel</b>
+            <b>Asosiasi Asuransi Syariah Indonesia (AASI)</b>
         </p>
         <br><br>
         ";
@@ -277,10 +277,11 @@ class Auth_v1
 
             if ($data->need_verify && !$data->is_testing) {
                 // Send email for verification
-                $to = [$data->email, ''];
+                $queue = 'send-mail';
                 $subject = MyFunc::sprintfx($this->subject_email_vercode, ['code' => $code]);
                 $content = MyFunc::sprintfx($this->content_email_vercode, ['code' => $code]);
-                Email::send(null, $to, $subject, $content);
+                $dataMail = ['to' => $data->email, 'subject' => $subject, 'content' => $content];
+                $rQueue = Redis::send($queue, $dataMail);
             }
 
             if ($data->is_testing) {
@@ -353,11 +354,6 @@ class Auth_v1
                 $content = MyFunc::sprintfx($this->content_new_password_notif, ['password' => $password]);
                 $dataMail = ['to' => $data->email, 'subject' => $subject, 'content' => $content];
                 $rQueue = Redis::send($queue, $dataMail);
-
-                // $to = [$email, ''];
-                // $subject = $this->subject_new_password_notif;
-                // $content = MyFunc::sprintfx($this->content_new_password_notif, ['password' => $password]);
-                // Email::send(null, $to, $subject, $content);
             }
 
             if ($data->is_testing) {
@@ -429,10 +425,11 @@ class Auth_v1
 
             if ($data->need_confirm && !$data->is_testing) {
                 // Send new password to email
-                $to = [$user->email, ''];
+                $queue = 'send-mail';
                 $subject = $this->subject_new_password_notif;
                 $content = MyFunc::sprintfx($this->content_new_password_notif, ['password' => $new_password]);
-                Email::send(null, $to, $subject, $content);
+                $dataMail = ['to' => $user->email, 'subject' => $subject, 'content' => $content];
+                $rQueue = Redis::send($queue, $dataMail);
             }
 
             if ($data->is_testing) {
@@ -529,11 +526,6 @@ class Auth_v1
                 $content = MyFunc::sprintfx($this->content_forgot_vercode, ['code' => $code]);
                 $dataMail = ['to' => $data->email, 'subject' => $subject, 'content' => $content];
                 $rQueue = Redis::send($queue, $dataMail);
-
-                // $to = [$data->email, ''];
-                // $subject = MyFunc::sprintfx($this->subject_forgot_vercode, ['code' => $code]);
-                // $content = MyFunc::sprintfx($this->content_forgot_vercode, ['code' => $code]);
-                // Email::send(null, $to, $subject, $content);
             }
             if ($data->send_via == 'sms' && !$data->is_testing) {
                 // Trying send code to sms ....
@@ -610,10 +602,6 @@ class Auth_v1
                 $content = MyFunc::sprintfx($this->content_unregister_vercode, ['code' => $code]);
                 $dataMail = ['to' => $user->email, 'subject' => $subject, 'content' => $content];
                 $rQueue = Redis::send($queue, $dataMail);
-                // $to = [$user->email, ''];
-                // $subject = MyFunc::sprintfx($this->subject_unregister_vercode, ['code' => $code]);
-                // $content = MyFunc::sprintfx($this->content_unregister_vercode, ['code' => $code]);
-                // Email::send(null, $to, $subject, $content);
                 $result['result'] = "Email has been sent!";
             }
 
@@ -623,10 +611,6 @@ class Auth_v1
                 $content = MyFunc::sprintfx($this->content_email_vercode, ['code' => $code]);
                 $dataMail = ['to' => $user->email, 'subject' => $subject, 'content' => $content];
                 $rQueue = Redis::send($queue, $dataMail);
-                // $to = [$user->email, ''];
-                // $subject = MyFunc::sprintfx($this->subject_email_vercode, ['code' => $code]);
-                // $content = MyFunc::sprintfx($this->content_email_vercode, ['code' => $code]);
-                // Email::send(null, $to, $subject, $content);
                 $result['result'] = "Email has been sent!";
             }
 
@@ -644,7 +628,7 @@ class Auth_v1
                     CURLOPT_FOLLOWLOCATION => true,
                     CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
                     CURLOPT_CUSTOMREQUEST => 'POST',
-                    CURLOPT_POSTFIELDS => array('target' => $member->phone, 'message' => "{$code} - Ini adalah kode verifikasi dari Amoora Travel"),
+                    CURLOPT_POSTFIELDS => array('target' => $member->phone, 'message' => "{$code} - Ini adalah kode verifikasi dari AASI"),
                     CURLOPT_HTTPHEADER => array(
                         "Authorization: " . getenv('FONNTE_TOKEN')
                     ),
@@ -790,10 +774,6 @@ class Auth_v1
                 $content = $this->content_unregister_notif;
                 $dataMail = ['to' => $user->email, 'subject' => $subject, 'content' => $content];
                 $rQueue = Redis::send($queue, $dataMail);
-                // $to = [$user->email, ''];
-                // $subject = $this->subject_unregister_notif;
-                // $content = $this->content_unregister_notif;
-                // Email::send(null, $to, $subject, $content);
             }
 
             if ($data->is_testing) {
