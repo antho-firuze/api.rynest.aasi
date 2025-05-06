@@ -10,6 +10,7 @@ use stdClass;
 use support\Db;
 use support\MyFunc;
 use support\Redis;
+use Webman\RedisQueue\Redis as RedisQueue;
 
 class Exam_v1
 {
@@ -872,7 +873,7 @@ class Exam_v1
                 $dataQueue['schedule_request_id'] = $data->schedule_request_id;
                 $dataQueue['id_member'] = $id_member;
                 $dataQueue['sync_question'] = $data->question_id;
-                Redis::send('sync-question', $dataQueue);
+                RedisQueue::send('sync-question', $dataQueue);
             }
 
             Db::commit();
