@@ -738,6 +738,7 @@ class Exam_v1
 
             $exam_result->state = empty($exam_result->status) ? 'ON-GOING' : 'COMPLETED';
 
+
             // Db::commit();
         } catch (\Throwable $th) {
             // Db::rollBack();
@@ -749,7 +750,6 @@ class Exam_v1
             if ($exam_result->state == 'ON-GOING') {
                 // Update field check Score
                 $exam_result->cek_score = $exam_result->cek_score + 1;
-                $exam_result->check_score = $exam_result->cek_score;
 
                 $count = Db::table('exam_results')
                     ->where('id', $exam_result->id)
@@ -767,6 +767,7 @@ class Exam_v1
 
         // LAST STAGE (Output Process)
         // ===========================
+        $exam_result->check_score = $exam_result->cek_score;
         // Clearing the output
         unset($exam_result->answer_keys);
         unset($exam_result->the_keys);
