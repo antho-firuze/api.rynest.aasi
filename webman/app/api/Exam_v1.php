@@ -750,12 +750,14 @@ class Exam_v1
 
         Db::beginTransaction();
         try {
-            $count = Db::table('exam_results')
-                ->where('id', $exam_result->id)
-                ->update([
-                    'cek_score' => $exam_result->cek_score,
-                    'score' => $exam_result->score,
-                ]);
+            if ($exam_result->state == 'ON-GOING') {
+                $count = Db::table('exam_results')
+                    ->where('id', $exam_result->id)
+                    ->update([
+                        'cek_score' => $exam_result->cek_score,
+                        'score' => $exam_result->score,
+                    ]);
+            }
 
             Db::commit();
         } catch (\Throwable $th) {
