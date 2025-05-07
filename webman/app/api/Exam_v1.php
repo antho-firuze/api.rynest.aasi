@@ -736,10 +736,6 @@ class Exam_v1
             $score = $countRightAnswer * (100 / $exam_result->questions);
             $exam_result->score = "{$score}/{$exam_result->questions}";
 
-            // Update field check Score
-            $exam_result->cek_score = $exam_result->cek_score + 1;
-            $exam_result->check_score = $exam_result->cek_score;
-
             $exam_result->state = empty($exam_result->status) ? 'ON-GOING' : 'COMPLETED';
 
             // Db::commit();
@@ -751,6 +747,10 @@ class Exam_v1
         Db::beginTransaction();
         try {
             if ($exam_result->state == 'ON-GOING') {
+                // Update field check Score
+                $exam_result->cek_score = $exam_result->cek_score + 1;
+                $exam_result->check_score = $exam_result->cek_score;
+
                 $count = Db::table('exam_results')
                     ->where('id', $exam_result->id)
                     ->update([
