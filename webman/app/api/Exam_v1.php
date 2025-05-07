@@ -181,7 +181,7 @@ class Exam_v1
 
         // MIDDLE STAGE (Main Process)
         // ===========================
-        Db::beginTransaction();
+        // Db::beginTransaction();
         try {
             $exam_result = Db::table('exam_results')
                 ->selectRaw('id, category_id, score, status, note, click_score, cek_score, questions, passed_grade, duration, start_at, finish_at, answer_keys, the_keys, restart, device, ip_address, location')
@@ -276,6 +276,14 @@ class Exam_v1
                 }
             }
 
+            // Db::commit();
+        } catch (\Throwable $th) {
+            // Db::rollBack();
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+        }
+
+        Db::beginTransaction();
+        try {
             // Update field check Score
             $count = Db::table('exam_results')
                 ->where('id', $exam_result->id)
@@ -359,7 +367,7 @@ class Exam_v1
 
         // MIDDLE STAGE (Main Process)
         // ===========================
-        Db::beginTransaction();
+        // Db::beginTransaction();
         try {
             $exam_result = Db::table('exam_results')
                 ->selectRaw('id, question_ids, answer_keys, sync_question, status, click_score, cek_score, questions, duration, start_at, finish_at, ip_address, location, device')
@@ -384,9 +392,9 @@ class Exam_v1
                 self::_finish_session($data->schedule_request_id, $id_member);
             }
 
-            Db::commit();
+            // Db::commit();
         } catch (\Throwable $th) {
-            Db::rollBack();
+            // Db::rollBack();
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
 
@@ -689,7 +697,7 @@ class Exam_v1
 
         // MIDDLE STAGE (Main Process)
         // ===========================
-        Db::beginTransaction();
+        // Db::beginTransaction();
         try {
             $exam_result = Db::table('exam_results')
                 ->selectRaw('id, score, status, click_score, cek_score, questions, passed_grade, duration, start_at, finish_at, answer_keys, the_keys')
@@ -731,6 +739,15 @@ class Exam_v1
             // Update field check Score
             $exam_result->cek_score = $exam_result->cek_score + 1;
             $exam_result->check_score = $exam_result->cek_score;
+
+            // Db::commit();
+        } catch (\Throwable $th) {
+            // Db::rollBack();
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+        }
+
+        Db::beginTransaction();
+        try {
             $count = Db::table('exam_results')
                 ->where('id', $exam_result->id)
                 ->update([
@@ -786,7 +803,7 @@ class Exam_v1
 
         // MIDDLE STAGE (Main Process)
         // ===========================
-        Db::beginTransaction();
+        // Db::beginTransaction();
         try {
             $exam_result = Db::table('exam_results')
                 ->selectRaw('id, question_ids, answer_keys, sync_question, status, click_score, cek_score, start_at, finish_at, ip_address, location, device')
@@ -802,15 +819,23 @@ class Exam_v1
                 return jsonr(['message' => "Examination has been finished !!"]);
             }
 
+            // FINISH EXAM SESSION
+            self::_finish_session($data->schedule_request_id, $id_member);
+
+            // Db::commit();
+        } catch (\Throwable $th) {
+            // Db::rollBack();
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+        }
+
+        Db::beginTransaction();
+        try {
             $count = Db::table('exam_results')
                 ->where('id', $exam_result->id)
                 ->update([
                     'status'    => 'completed',
                     'finish_at' => $data->finish_at ?? date('Y-m-d H:i:s'),
                 ]);
-
-            // FINISH EXAM SESSION
-            self::_finish_session($data->schedule_request_id, $id_member);
 
             Db::commit();
         } catch (\Throwable $th) {
