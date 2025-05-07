@@ -713,10 +713,6 @@ class Exam_v1
                 return jsonr(['message' => "Check score has reached the limit [max: {$exam_result->click_score} times]"]);
             }
 
-            if (!empty($exam_result->status)) {
-                return jsonr(['message' => "Examination has been finished !!"]);
-            }
-
             // Answered question count
             $arrAnswerKeys = explode(',', $exam_result->answer_keys);
             $arrCount = array_count_values($arrAnswerKeys);
@@ -743,6 +739,8 @@ class Exam_v1
             // Update field check Score
             $exam_result->cek_score = $exam_result->cek_score + 1;
             $exam_result->check_score = $exam_result->cek_score;
+
+            $exam_result->state = empty($exam_result->status) ? 'ON-GOING' : 'COMPLETED';
 
             // Db::commit();
         } catch (\Throwable $th) {
