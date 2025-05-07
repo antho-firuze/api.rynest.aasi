@@ -713,6 +713,10 @@ class Exam_v1
                 return jsonr(['message' => "Check score has reached the limit [max: {$exam_result->click_score} times]"]);
             }
 
+            if (!empty($exam_result->status)) {
+                return jsonr(['message' => "Examination has been finished !!"]);
+            }
+
             // Answered question count
             $arrAnswerKeys = explode(',', $exam_result->answer_keys);
             $arrCount = array_count_values($arrAnswerKeys);
