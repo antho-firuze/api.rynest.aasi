@@ -175,7 +175,7 @@ class Exam_v1
 
         // SESSION CHECK STAGE
         // ===================
-        if (self::_check_session($data->schedule_request_id, $id_member, $data->device_id) == false) {
+        if (self::_check_session_same_device($data->schedule_request_id, $id_member, $data->device_id) == false) {
             return jsonr(['message' => 'Another device has been login'], 409);
         }
 
@@ -619,7 +619,7 @@ class Exam_v1
 
         // SESSION CHECK STAGE
         // ===================
-        if (self::_check_session($data->schedule_request_id, $id_member, $data->device_id) == false) {
+        if (self::_check_session_same_device($data->schedule_request_id, $id_member, $data->device_id) == false) {
             return jsonr(['message' => 'Another device has been login'], 409);
         }
 
@@ -691,7 +691,7 @@ class Exam_v1
 
         // SESSION CHECK STAGE
         // ===================
-        if (self::_check_session($data->schedule_request_id, $id_member, $data->device_id) == false) {
+        if (self::_check_session_same_device($data->schedule_request_id, $id_member, $data->device_id) == false) {
             return jsonr(['message' => 'Another device has been login'], 409);
         }
 
@@ -802,7 +802,7 @@ class Exam_v1
 
         // SESSION CHECK STAGE
         // ===================
-        if (self::_check_session($data->schedule_request_id, $id_member, $data->device_id) == false) {
+        if (self::_check_session_same_device($data->schedule_request_id, $id_member, $data->device_id) == false) {
             return jsonr(['message' => 'Another device has been login'], 409);
         }
 
@@ -879,7 +879,7 @@ class Exam_v1
 
         // SESSION CHECK STAGE
         // ===================
-        if (self::_check_session($data->schedule_request_id, $id_member, $data->device_id) == false) {
+        if (self::_check_session_same_device($data->schedule_request_id, $id_member, $data->device_id) == false) {
             return jsonr(['message' => 'Another device has been login'], 409);
         }
 
@@ -1053,19 +1053,26 @@ class Exam_v1
         Redis::del($sessionId);
     }
 
-    private function _check_session(int $schedule_request_id, int $id_member, string $device_id): bool
+    private function _check_session_same_device(int $schedule_request_id, int $id_member, string $device_id): bool
     {
-        $sessionId = "exam-session-{$schedule_request_id}-{$id_member}";
-        // $ret = Redis::exists($sessionId);
-        $ret = Redis::get($sessionId);
-        if ($ret == null) {
-            // Session does not exists
-            // it means: exam start has not been executed or exam has been finished
+        try {
+            $sessionId = "exam-session-{$schedule_request_id}-{$id_member}";
+            // $ret = null;
+            // $ret = Redis::exists($sessionId);
+            $ret = Redis::get($sessionId);
+            if ($ret == null) {
+                // Session does not exists
+                // it means: exam start has not been executed or exam has been finished
+                return true;
+            } else {
+                // Session exists
+                return $ret == $device_id;
+            }
+        } catch (\Throwable $th) {
+            // Became true when Redis Error, because we think session does not exists.
+            //throw $th;
             return true;
         }
-
-        // Session exists
-        return $ret == $device_id;
     }
 
     public function photos(Request $request)
