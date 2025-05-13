@@ -37,12 +37,12 @@ services:
     ports:
       - 6379:6379
     working_dir: /data
-    volumes:
-      - redisdata:/data
+    # volumes:
+    #   - redisdata:/data
     environment:
       - REDIS_REPLICATION_MODE=master
       - REDIS_HOST=127.0.0.1
 
-volumes:
-  redisdata:
-    driver: local
+# volumes:
+#   redisdata:
+#     driver: local
