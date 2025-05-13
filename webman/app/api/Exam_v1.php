@@ -40,6 +40,19 @@ class Exam_v1
         }
         $user_id = JwtToken::getCurrentId();
 
+        // REDIS CHECK STAGE
+        // ===================
+        try {
+            $redisKey = "exam-schedule-user_id-{$user_id}";
+            $redisVal = Redis::get($redisKey);
+            if ($redisVal != null) {
+                $result = json_decode($redisVal);
+                return json($result);
+            }
+        } catch (\Throwable $th) {
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+        }
+
         // MIDDLE STAGE (Main Process)
         // ===========================
         Db::beginTransaction();
@@ -107,6 +120,10 @@ class Exam_v1
         $result->photo_start = $photo_start;
         $result->photo_finish = $photo_finish;
         $result->photos = $photos;
+
+        // Save to Redis
+        Redis::set($redisKey, json_encode($result));
+        Redis::expire($redisKey, 10);
         return json($result);
     }
 
@@ -177,6 +194,19 @@ class Exam_v1
         // ===================
         if (self::_check_session_same_device($data->schedule_request_id, $id_member, $data->device_id) == false) {
             return jsonr(['message' => 'Another device has been login'], 409);
+        }
+
+        // REDIS CHECK STAGE
+        // ===================
+        try {
+            $redisKey = "exam-result-id_member-{$id_member}";
+            $redisVal = Redis::get($redisKey);
+            if ($redisVal != null) {
+                $result = json_decode($redisVal);
+                return json($result);
+            }
+        } catch (\Throwable $th) {
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
 
         // MIDDLE STAGE (Main Process)
@@ -317,6 +347,10 @@ class Exam_v1
         $result->photo_finish = $photo_finish;
         $result->state = $status;
         $result->session = $exam_session;
+
+        // Save to Redis
+        Redis::set($redisKey, json_encode($result));
+        Redis::expire($redisKey, 10);
         return json($result);
     }
 
@@ -1083,6 +1117,19 @@ class Exam_v1
         $user_id = JwtToken::getCurrentId();
         $id_member = JwtToken::getExtendVal('id_member');
 
+        // REDIS CHECK STAGE
+        // ===================
+        try {
+            $redisKey = "exam-photos-user_id-{$user_id}";
+            $redisVal = Redis::get($redisKey);
+            if ($redisVal != null) {
+                $result = json_decode($redisVal);
+                return json($result);
+            }
+        } catch (\Throwable $th) {
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+        }
+
         // MIDDLE STAGE (Main Process)
         // ===========================
         Db::beginTransaction();
@@ -1102,6 +1149,9 @@ class Exam_v1
         // LAST STAGE (Output Process)
         // ===========================
         $result = $photos;
+        // Save to Redis
+        Redis::set($redisKey, json_encode($result));
+        Redis::expire($redisKey, 10);
         return json($result);
     }
 

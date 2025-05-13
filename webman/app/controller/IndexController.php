@@ -31,8 +31,20 @@ class IndexController
 
     public function redis(Request $request)
     {
-        Redis::set('abc', 'cba');
-        return json(Redis::get('abc'));
+        $data = (object) $request->get();
+        $redisKey = 'key1';
+        try {
+            if ($data->state == 'set') {
+                Redis::set($redisKey, 'cba');
+                Redis::expire($redisKey, 10);
+                return json('done');
+            } else {
+                $result = Redis::get($redisKey);
+                return json($result);
+            }
+        } catch (\Throwable $th) {
+            return json(['message' => $th->getMessage(), 'trace' => $th->getTrace()]);
+        }
     }
 
     public function crontest(Request $request)
