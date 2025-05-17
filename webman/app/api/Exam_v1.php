@@ -193,7 +193,7 @@ class Exam_v1
         // SESSION CHECK STAGE
         // ===================
         if (self::_check_session_same_device($data->schedule_request_id, $id_member, $data->device_id) == false) {
-            return jsonr(['message' => 'Another device has been login'], 409);
+            return jsonr(['message' => 'Perangkat lain telah login menggunakan akun Anda'], 409);
         }
 
         // REDIS CHECK STAGE
@@ -596,6 +596,13 @@ class Exam_v1
                 // SECURITY CHECK: If difference Device is detected
                 if ($exam_result->device != $data->device_id) {
                     // TODO: Send notidification to creator/initiator
+                    $channel_name = "private-user-{$user_id}";
+                    $event = 'intrusion';
+                    $payload['code'] = 409;
+                    $payload['device_id'] = $data->device_id;
+                    $payload['title'] = 'Deteksi Gangguan';
+                    $payload['message'] = 'Perangkat lain telah login menggunakan akun Anda !';
+                    MyFunc::send_notif($channel_name, $event, $payload);
                 }
 
                 // SECURITY CHECK: If difference IP is detected
@@ -654,7 +661,7 @@ class Exam_v1
         // SESSION CHECK STAGE
         // ===================
         if (self::_check_session_same_device($data->schedule_request_id, $id_member, $data->device_id) == false) {
-            return jsonr(['message' => 'Another device has been login'], 409);
+            return jsonr(['message' => 'Perangkat lain telah login menggunakan akun Anda'], 409);
         }
 
         // MIDDLE STAGE (Main Process)
@@ -726,7 +733,7 @@ class Exam_v1
         // SESSION CHECK STAGE
         // ===================
         if (self::_check_session_same_device($data->schedule_request_id, $id_member, $data->device_id) == false) {
-            return jsonr(['message' => 'Another device has been login'], 409);
+            return jsonr(['message' => 'Perangkat lain telah login menggunakan akun Anda'], 409);
         }
 
         // MIDDLE STAGE (Main Process)
@@ -837,7 +844,7 @@ class Exam_v1
         // SESSION CHECK STAGE
         // ===================
         if (self::_check_session_same_device($data->schedule_request_id, $id_member, $data->device_id) == false) {
-            return jsonr(['message' => 'Another device has been login'], 409);
+            return jsonr(['message' => 'Perangkat lain telah login menggunakan akun Anda'], 409);
         }
 
         // MIDDLE STAGE (Main Process)
@@ -914,7 +921,7 @@ class Exam_v1
         // SESSION CHECK STAGE
         // ===================
         if (self::_check_session_same_device($data->schedule_request_id, $id_member, $data->device_id) == false) {
-            return jsonr(['message' => 'Another device has been login'], 409);
+            return jsonr(['message' => 'Perangkat lain telah login menggunakan akun Anda'], 409);
         }
 
         // MIDDLE STAGE (Main Process)

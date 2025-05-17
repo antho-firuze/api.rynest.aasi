@@ -49,7 +49,11 @@ class Pusher_v1
     // }
     public function trigger(Request $request)
     {
-        $pusher = new Api(str_replace('0.0.0.0', '127.0.0.1', config('plugin.webman.push.app.api')), config('plugin.webman.push.app.app_key'), config('plugin.webman.push.app.app_secret'));
+        $pusher = new Api(
+            str_replace('0.0.0.0', '127.0.0.1', config('plugin.webman.push.app.api')), 
+            config('plugin.webman.push.app.app_key'), 
+            config('plugin.webman.push.app.app_secret')
+        );
 
         $channel_name = $request->post('channel_name');
         $event = $request->post('event');

@@ -3,8 +3,10 @@
 namespace app\controller;
 
 use support\Db;
+use support\MyFunc;
 use support\Redis;
 use support\Request;
+use Webman\Push\Api;
 
 class IndexController
 {
@@ -59,5 +61,35 @@ class IndexController
             ->get();
 
         return json($exam_result);
+    }
+
+    function send_notif(Request $request)
+    {
+        // $pusher = new Api(
+        //     str_replace('0.0.0.0', '127.0.0.1', config('plugin.webman.push.app.api')),
+        //     config('plugin.webman.push.app.app_key'),
+        //     config('plugin.webman.push.app.app_secret')
+        // );
+        // // Push a message event to all clients subscribed to user-1
+        // $channel_name = 'public-channel';
+        // $event = 'message';
+        // $data['from_uid'] = 0;
+        // $data['title'] = 'Hanya title';
+        // $data['message'] = 'Hanya message biasa !';
+        // $pusher->trigger($channel_name, $event, $data, $socket_id);
+
+        // $channel_name = 'public-channel';
+        // $event = 'message';
+        // $data['from_uid'] = 0;
+        // $data['title'] = 'Hanya title';
+        // $data['message'] = 'Hanya message biasa !';
+
+        $channel_name = "private-user-400";
+        $event = 'intrusion';
+        $payload['code'] = 409;
+        $payload['device_id'] = "emu64a:UE1A.230829.036.A23";
+        $payload['title'] = 'Deteksi Gangguan';
+        $payload['message'] = 'Perangkat lain telah login menggunakan akun Anda !';
+        MyFunc::send_notif($channel_name, $event, $payload);
     }
 }

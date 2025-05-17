@@ -65,32 +65,3 @@ if (!function_exists('sprintfx')) {
         return str_replace(array_keys($arr), array_values($arr), $str);
     }
 }
-
-/**
- * Check required params field
- *
- * @param string $str
- * @param array $vars     Paired value array
- * @param string $prefix  Default '{'
- * @param string $suffix  Default '}'
- * @return void
- */
-if (!function_exists('require_params')) {
-    function require_params(Request $request, $fields = [])
-    {
-        $params = (object) $request->post();
-        $nfields = [];
-        foreach ($fields as $k => $v)
-            if (!isset($params->{$v}))
-                $nfields[] = $v;
-
-        // if (isset($request->params->{$v}) && $request->params->{$v} == '')
-        // 	$nfields[] = $v;
-
-        if ($nfields) {
-            return ["message" => implode(', ', $nfields)];
-        }
-
-        return TRUE;
-    }
-}

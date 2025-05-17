@@ -6,6 +6,7 @@ use Exception;
 use support\Request;
 use Aws\S3\Exception\S3Exception;
 use Aws\S3\S3Client;
+use Webman\Push\Api;
 
 class MyFunc
 {
@@ -158,5 +159,22 @@ class MyFunc
         } catch (S3Exception $e) {
             throw new Exception(message: $e->getMessage());
         }
+    }
+
+    static function send_notif(string $channel_name, string $event, array $data, string $socket_id = '')
+    {
+        $pusher = new Api(
+            str_replace('0.0.0.0', '127.0.0.1', config('plugin.webman.push.app.api')),
+            config('plugin.webman.push.app.app_key'),
+            config('plugin.webman.push.app.app_secret')
+        );
+        // // Push a message event to all clients subscribed to user-1
+        // $channel_name = 'public-channel';
+        // $event = 'message';
+        // $data['from_uid'] = 0;
+        // $data['title'] = 'Hanya title';
+        // $data['message'] = 'Hanya message biasa !';
+        // $socket_id = '';
+        $pusher->trigger($channel_name, $event, $data, $socket_id);
     }
 }
