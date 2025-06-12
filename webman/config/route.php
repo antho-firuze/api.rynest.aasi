@@ -86,6 +86,8 @@ Route::fallback(function (Request $request) {
     $isTypeFormData = false !== strpos($request->header('Content-Type', ''), 'form-data');
     $isTypeAppJson = false !== strpos($request->header('Content-Type', ''), 'json');
     // return json($isTypeAppJson);
+    return jsonr(['message' => '404 not found'], 404);
+
     if ($request->expectsJson() || $isTypeFormData || $isTypeAppJson) {
         return jsonr(['message' => '404 not found'], 404);
     }

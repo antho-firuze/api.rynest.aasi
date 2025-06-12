@@ -3,7 +3,7 @@ services:
     build:
       context: ./
       dockerfile: ./docker/php-webman/phpwebman.docker
-    container_name: api-aasi
+    container_name: aasi-phpwebman
     restart: unless-stopped
     tty: true
     ports:
@@ -20,7 +20,7 @@ services:
     build:
       context: ./
       dockerfile: ./docker/nginx/nginx.docker
-    container_name: api-aasi-nginx
+    container_name: aasi-nginx
     restart: always
     tty: true
     ports:
@@ -31,7 +31,7 @@ services:
 
   redis:
     image: redis:latest
-    container_name: api-aasi-redis
+    container_name: aasi-redis
     restart: on-failure
     tty: true
     ports:

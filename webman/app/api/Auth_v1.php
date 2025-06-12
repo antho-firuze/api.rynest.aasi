@@ -192,7 +192,6 @@ class Auth_v1
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
 
-
         // LAST STAGE (Output Process)
         // ===========================
         $result['user'] = $payload;
@@ -277,11 +276,10 @@ class Auth_v1
 
             if ($data->need_verify && !$data->is_testing) {
                 // Send email for verification
-                $queue = 'send-mail';
                 $subject = MyFunc::sprintfx($this->subject_email_vercode, ['code' => $code]);
                 $content = MyFunc::sprintfx($this->content_email_vercode, ['code' => $code]);
                 $dataMail = ['to' => $data->email, 'subject' => $subject, 'content' => $content];
-                RedisQueue::send($queue, $dataMail);
+                RedisQueue::send('send-mail', $dataMail);
             }
 
             if ($data->is_testing) {
@@ -349,11 +347,10 @@ class Auth_v1
 
             if ($data->need_confirm && !$data->is_testing) {
                 // Send new password to email
-                $queue = 'send-mail';
                 $subject = $this->subject_new_password_notif;
                 $content = MyFunc::sprintfx($this->content_new_password_notif, ['password' => $password]);
                 $dataMail = ['to' => $data->email, 'subject' => $subject, 'content' => $content];
-                RedisQueue::send($queue, $dataMail);
+                RedisQueue::send('send-mail', $dataMail);
             }
 
             if ($data->is_testing) {
@@ -425,11 +422,10 @@ class Auth_v1
 
             if ($data->need_confirm && !$data->is_testing) {
                 // Send new password to email
-                $queue = 'send-mail';
                 $subject = $this->subject_new_password_notif;
                 $content = MyFunc::sprintfx($this->content_new_password_notif, ['password' => $new_password]);
                 $dataMail = ['to' => $user->email, 'subject' => $subject, 'content' => $content];
-                RedisQueue::send($queue, $dataMail);
+                RedisQueue::send('send-mail', $dataMail);
             }
 
             if ($data->is_testing) {
@@ -459,8 +455,8 @@ class Auth_v1
     {
         try {
             $result = JwtToken::refreshToken();
-        } catch (\Throwable $e) {
-            return jsonr(['message' => $e->getMessage()]);
+        } catch (\Throwable $th) {
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
 
         return json($result);
@@ -521,11 +517,10 @@ class Auth_v1
                 ->update(['verify_code' => $code]);
 
             if ($data->send_via == 'email' && !$data->is_testing) {
-                $queue = 'send-mail';
                 $subject = MyFunc::sprintfx($this->subject_forgot_vercode, ['code' => $code]);
                 $content = MyFunc::sprintfx($this->content_forgot_vercode, ['code' => $code]);
                 $dataMail = ['to' => $data->email, 'subject' => $subject, 'content' => $content];
-                RedisQueue::send($queue, $dataMail);
+                RedisQueue::send('send-mail', $dataMail);
             }
             if ($data->send_via == 'sms' && !$data->is_testing) {
                 // Trying send code to sms ....
@@ -597,20 +592,18 @@ class Auth_v1
                 ->update(['verify_code' => $code]);
 
             if ($type == 'unregister' && !$data->is_testing) {
-                $queue = 'send-mail';
                 $subject = MyFunc::sprintfx($this->subject_unregister_vercode, ['code' => $code]);
                 $content = MyFunc::sprintfx($this->content_unregister_vercode, ['code' => $code]);
                 $dataMail = ['to' => $user->email, 'subject' => $subject, 'content' => $content];
-                RedisQueue::send($queue, $dataMail);
+                RedisQueue::send('send-mail', $dataMail);
                 $result['result'] = "Email has been sent!";
             }
 
             if ($type == 'email' && !$data->is_testing) {
-                $queue = 'send-mail';
                 $subject = MyFunc::sprintfx($this->subject_email_vercode, ['code' => $code]);
                 $content = MyFunc::sprintfx($this->content_email_vercode, ['code' => $code]);
                 $dataMail = ['to' => $user->email, 'subject' => $subject, 'content' => $content];
-                RedisQueue::send($queue, $dataMail);
+                RedisQueue::send('send-mail', $dataMail);
                 $result['result'] = "Email has been sent!";
             }
 
@@ -769,11 +762,10 @@ class Auth_v1
                 ]);
 
             if ($data->is_send_email_info && !$data->is_testing) {
-                $queue = 'send-mail';
                 $subject = $this->subject_unregister_notif;
                 $content = $this->content_unregister_notif;
                 $dataMail = ['to' => $user->email, 'subject' => $subject, 'content' => $content];
-                RedisQueue::send($queue, $dataMail);
+                RedisQueue::send('send-mail', $dataMail);
             }
 
             if ($data->is_testing) {
@@ -786,7 +778,6 @@ class Auth_v1
             Db::rollBack();
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
-
 
         // LAST STAGE (Output Process)
         // ===========================

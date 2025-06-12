@@ -26,19 +26,19 @@
   "require": {
     "php": ">=8.1",
     "workerman/webman-framework": "^2.1",
+    "workerman/crontab": "^1.0",
+    "workerman/validation": "^3.1",
+    "webman/database": "^2.1",
+    "webman/push": "^1.0",
+    "webman/redis": "^2.1",
+    "webman/redis-queue": "^2.1",
     "monolog/monolog": "^2.0",
     "vlucas/phpdotenv": "^5.6",
+    "firuze/jwt": "^2.0",
     "phpmailer/phpmailer": "^6.9",
-    "workerman/crontab": "^1.0",
     "aws/aws-sdk-php": "^3.340",
     "polarising/bcrypt": "^1.0",
-    "firuze/jwt": "^2.0",
-    "illuminate/events": "^11.44",
-    "webman/push": "^1.0",
-    "webman/database": "^2.1",
-    "webman/redis": "^2.1",
-    "workerman/validation": "^3.1",
-    "webman/redis-queue": "^2.1"
+    "illuminate/events": "^11.44"
   },
   "suggest": {
     "ext-event": "For better performance. "

@@ -102,11 +102,14 @@ class Member_v1
 
         // MIDDLE STAGE (Main Process)
         // ===========================
+        Db::beginTransaction();
         try {
-            $url = MyFunc::upload_s3($request, [
-                'file_name' => "{$type}-{$id_member}",
-                'folder'    => 'images/profile/',
-            ]);
+            $config['userfile'] = "userfile";
+            $config['file_name'] = "{$type}-{$id_member}";
+            $config['folder'] = "images/profile/";
+            $config['allowed_types'] = ['jpg', 'png', 'bmp', 'gif'];
+            $config['max_size'] = 1000; // in KB, default 1000KB = 1MB
+            $url = MyFunc::upload_s3($request, $config);
 
             if ($type == 'idcard') {
                 $count = Db::table('members')
@@ -123,10 +126,15 @@ class Member_v1
             }
 
             $result = ['url' => $url];
-            return json($result);
+
+            Db::commit();
         } catch (\Throwable $th) {
-            $result = ['message' => $th->getMessage()];
-            return jsonr($result);
+            Db::rollBack();
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
+
+        // LAST STAGE (Output Process)
+        // ===========================
+        return json($result);
     }
 }

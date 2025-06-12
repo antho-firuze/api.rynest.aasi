@@ -929,7 +929,8 @@ class Exam_v1
         Db::beginTransaction();
         try {
             // Get from Redis
-            $question = Redis::get("question-{$data->question_id}");
+            $redisKey = "exam-question-{$data->question_id}";
+            $question = Redis::get($redisKey);
             if ($question == null) {
                 $question = Db::table('questions')
                     ->selectRaw('id, question, answer_option_a, answer_option_b, answer_option_c, answer_option_d, answer_key')
@@ -937,7 +938,7 @@ class Exam_v1
                     ->first();
 
                 // Save to Redis
-                Redis::set("question-{$data->question_id}", json_encode($question));
+                Redis::set($redisKey, json_encode($question));
             } else {
                 $question = json_decode($question);
             }
@@ -1192,10 +1193,12 @@ class Exam_v1
         // ===========================
         Db::beginTransaction();
         try {
-            $url = MyFunc::upload_s3($request, [
-                'file_name' => "{$type}-{$id_member}",
-                'folder'    => "images/examination/{$data->schedule_request_id}/",
-            ]);
+            $config['userfile'] = "userfile";
+            $config['file_name'] = "{$type}-{$id_member}";
+            $config['folder'] = "images/examination/{$data->schedule_request_id}/";
+            $config['allowed_types'] = ['jpg', 'png', 'bmp', 'gif'];
+            $config['max_size'] = 1000; // in KB, default 1000KB = 1MB
+            $url = MyFunc::upload_s3($request, $config);
 
             $photo = Db::table('participant_photo')
                 ->where('schedule_request_id', $data->schedule_request_id)

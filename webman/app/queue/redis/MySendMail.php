@@ -17,6 +17,9 @@ class MySendMail implements Consumer
     public function consume($data)
     {
         try {
+            // No need for deserialization
+            var_export($data); // Outputs ['to' => 'tom@gmail.com', 'content' => 'hello']
+
             $to = $data['to'];
             $subject = $data['subject'];
             $content = $data['content'];
@@ -26,8 +29,5 @@ class MySendMail implements Consumer
         } catch (\Throwable $th) {
             var_export($th->getMessage());
         }
-
-        // No need for deserialization
-        // var_export($data); // Outputs ['to' => 'tom@gmail.com', 'content' => 'hello']
     }
 }
