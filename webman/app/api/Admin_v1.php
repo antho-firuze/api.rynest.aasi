@@ -46,10 +46,15 @@ class Admin_v1
             ->where('categories.id', $schedule->category_id ?? null)->first();
         $location = Db::table('locations')->where('id', $schedule->location_id ?? null)->first();
         $exam_result = Db::table('exam_results')
-            ->selectRaw('id, id_member, member_id, category_id, schedule_request_id, question_ids, answer_keys, score, status, click_score, questions, passed_grade, duration, start_at, finish_at, device, ip_address, lat, lng')
+            ->selectRaw('id, id_member, member_id, category_id, schedule_request_id, question_ids, answer_keys, score, status, click_score, questions, passed_grade, duration, start_at, finish_at, answer_keys, the_keys, restart, device, ip_address, location')
             ->where('schedule_request_id', $schedule->schedule_request_id ?? null)
             ->where('id_member', $member->id ?? null)
             ->first();
+        $exam_session = Db::table('exam_session')
+            ->selectRaw('restart, device_id, device_name, ip_address, location, restart_at')
+            ->where('schedule_request_id', $schedule->schedule_request_id ?? null)
+            ->where('id_member', $member->id ?? null)
+            ->get();
 
         $result = (object) [];
         $result->user = $user;
@@ -61,6 +66,7 @@ class Admin_v1
         $result->category = $category;
         $result->location = $location;
         $result->exam_result = $exam_result;
+        $result->exam_session = $exam_session;
         return json($result);
     }
 
@@ -98,10 +104,15 @@ class Admin_v1
             ->where('categories.id', $schedule->category_id ?? null)->first();
         $location = Db::table('locations')->where('id', $schedule->location_id ?? null)->first();
         $exam_result = Db::table('exam_results')
-            ->selectRaw('id, id_member, member_id, category_id, schedule_request_id, question_ids, answer_keys, score, status, click_score, questions, passed_grade, duration, start_at, finish_at, device, ip_address, lat, lng')
+            ->selectRaw('id, id_member, member_id, category_id, schedule_request_id, question_ids, answer_keys, score, status, click_score, questions, passed_grade, duration, start_at, finish_at, answer_keys, the_keys, restart, device, ip_address, location')
             ->where('schedule_request_id', $schedule->schedule_request_id ?? null)
             ->where('id_member', $member->id ?? null)
             ->first();
+        $exam_session = Db::table('exam_session')
+            ->selectRaw('restart, device_id, device_name, ip_address, location, restart_at')
+            ->where('schedule_request_id', $schedule->schedule_request_id ?? null)
+            ->where('id_member', $member->id ?? null)
+            ->get();
 
         $result = (object) [];
         $result->member = $member;
@@ -113,6 +124,7 @@ class Admin_v1
         $result->category = $category;
         $result->location = $location;
         $result->exam_result = $exam_result;
+        $result->exam_session = $exam_session;
         return json($result);
     }
 
