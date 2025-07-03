@@ -84,10 +84,17 @@ class Exam_v1
                 ->where('id_member', $member->id ?? null)
                 ->first();
 
-            $openReg = date_create($schedule->open_registration);
-            $closeReg = date_create($schedule->close_registration);
-            $inputDate = date_create($data->datetime);
-            $state = self::_get_exam_state($inputDate, $openReg, $closeReg, $exam_result);
+            // return json(date_create($schedule->open_registration));
+
+            // Anticipate backward compatibility
+            if ($schedule->open_registration != null && $schedule->close_registration != null && $exam_result != null) {
+                $openReg = date_create($schedule->open_registration);
+                $closeReg = date_create($schedule->close_registration);
+                $inputDate = date_create($data->datetime);
+                $state = self::_get_exam_state($inputDate, $openReg, $closeReg, $exam_result);
+            } else {
+                $state = 'EXPIRED';
+            }
 
             // Exam Photos
             $photos = Db::table('participant_photo')
