@@ -16,6 +16,19 @@ class Exam_v1
 {
     protected $noNeedLogin = ['index'];
 
+    protected $validatorDesc = [
+        'attribute' => 'Params [{{name}}] is required',
+        'stringType' => '[{{name}}] must be a string type',
+        'intType' => '[{{name}}] must be integer',
+        'dateTime' => '[{{name}}] format is [Y-m-d H:i:s]',
+        'email' => '[{{name}}] must be a valid email',
+        'boolType' => '[{{name}}] must be a boolean type',
+        'length' => '[{{name}}] length must be between {{minValue}} and {{maxValue}}',
+        'number' => '[{{name}}] must be a number',
+        'notEmpty' => '[{{name}}] must not empty',
+        'noWhitespace' => '[{{name}}|username] cannot contain spaces',
+    ];
+
     public function index(Request $request)
     {
         return json(['message' => "Rynest => Admin API v1"]);
@@ -30,11 +43,7 @@ class Exam_v1
             $inputValidator = v::attribute('datetime', v::dateTime('Y-m-d H:i:s')->notEmpty());
             $inputValidator->assert($data);
         } catch (NestedValidationException $e) {
-            $errAttr = $e->getMessages([
-                'attribute' => 'Params [{{name}}] is required',
-                'dateTime' => '[{{name}}] format is [Y-m-d H:i:s]',
-                'notEmpty' => '[{{name}}] must not empty',
-            ]);
+            $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
             return jsonr(['message' => $errMessage]);
         }
@@ -187,11 +196,7 @@ class Exam_v1
                 ->attribute('device_id', v::stringType()->notEmpty());
             $inputValidator->assert($data);
         } catch (NestedValidationException $e) {
-            $errAttr = $e->getMessages([
-                'attribute' => 'Params [{{name}}] is required',
-                'intType' => '[{{name}}] must be integer',
-                'notEmpty' => '[{{name}}] must not empty',
-            ]);
+            $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
             return jsonr(['message' => $errMessage]);
         }
@@ -395,11 +400,7 @@ class Exam_v1
                 ->attribute('device_id', v::stringType()->notEmpty());
             $inputValidator->assert($data);
         } catch (NestedValidationException $e) {
-            $errAttr = $e->getMessages([
-                'attribute' => 'Params [{{name}}] is required',
-                'intType' => '[{{name}}] must be integer',
-                'notEmpty' => '[{{name}}] must not empty',
-            ]);
+            $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
             return jsonr(['message' => $errMessage]);
         }
@@ -471,12 +472,7 @@ class Exam_v1
                 ->attribute('device_id', v::stringType()->notEmpty());
             $inputValidator->assert($data);
         } catch (NestedValidationException $e) {
-            $errAttr = $e->getMessages([
-                'attribute' => 'Params [{{name}}] is required',
-                'intType' => '[{{name}}] must be integer',
-                'dateTime' => '[{{name}}] format is [Y-m-d H:i:s]',
-                'notEmpty' => '[{{name}}] must not empty',
-            ]);
+            $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
             return jsonr(['message' => $errMessage]);
         }
@@ -654,11 +650,7 @@ class Exam_v1
                 ->attribute('device_id', v::stringType()->notEmpty());
             $inputValidator->assert($data);
         } catch (NestedValidationException $e) {
-            $errAttr = $e->getMessages([
-                'attribute' => 'Params [{{name}}] is required',
-                'intType' => '[{{name}}] must be integer',
-                'notEmpty' => '[{{name}}] must not empty',
-            ]);
+            $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
             return jsonr(['message' => $errMessage]);
         }
@@ -727,11 +719,7 @@ class Exam_v1
                 ->attribute('device_id', v::stringType()->notEmpty());
             $inputValidator->assert($data);
         } catch (NestedValidationException $e) {
-            $errAttr = $e->getMessages([
-                'attribute' => 'Params [{{name}}] is required',
-                'intType' => '[{{name}}] must be integer',
-                'notEmpty' => '[{{name}}] must not empty',
-            ]);
+            $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
             return jsonr(['message' => $errMessage]);
         }
@@ -836,12 +824,7 @@ class Exam_v1
                 ->attribute('device_id', v::stringType()->notEmpty());
             $inputValidator->assert($data);
         } catch (NestedValidationException $e) {
-            $errAttr = $e->getMessages([
-                'attribute' => 'Params [{{name}}] is required',
-                'intType' => '[{{name}}] must be integer',
-                'dateTime' => '[{{name}}] format is [Y-m-d H:i:s]',
-                'notEmpty' => '[{{name}}] must not empty',
-            ]);
+            $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
             return jsonr(['message' => $errMessage]);
         }
@@ -914,11 +897,7 @@ class Exam_v1
                 ->attribute('device_id', v::stringType()->notEmpty());
             $inputValidator->assert($data);
         } catch (NestedValidationException $e) {
-            $errAttr = $e->getMessages([
-                'attribute' => 'Params [{{name}}] is required',
-                'intType' => '[{{name}}] must be integer',
-                'notEmpty' => '[{{name}}] must not empty',
-            ]);
+            $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
             return jsonr(['message' => $errMessage]);
         }
@@ -1021,11 +1000,7 @@ class Exam_v1
             $inputValidator = v::attribute('schedule_request_id', v::intType()->notEmpty());
             $inputValidator->assert($data);
         } catch (NestedValidationException $e) {
-            $errAttr = $e->getMessages([
-                'attribute' => 'Params [{{name}}] is required',
-                'intType' => '[{{name}}] must be integer',
-                'notEmpty' => '[{{name}}] must not empty',
-            ]);
+            $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
             return jsonr(['message' => $errMessage]);
         }
@@ -1180,10 +1155,7 @@ class Exam_v1
                 ->attribute('type', v::notEmpty());
             $inputValidator->assert($data);
         } catch (NestedValidationException $e) {
-            $errAttr = $e->getMessages([
-                'attribute' => 'Params [{{name}}] is required',
-                'notEmpty' => '[{{name}}] must not empty',
-            ]);
+            $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
             return jsonr(['message' => $errMessage]);
         }

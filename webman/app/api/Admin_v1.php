@@ -10,6 +10,19 @@ class Admin_v1
 {
     protected $noNeedLogin = ['index', 'user', 'member', 'update_schedule', 'clear_exam'];
 
+    protected $validatorDesc = [
+        'attribute' => 'Params [{{name}}] is required',
+        'stringType' => '[{{name}}] must be a string type',
+        'intType' => '[{{name}}] must be integer',
+        'dateTime' => '[{{name}}] format is [Y-m-d H:i:s]',
+        'email' => '[{{name}}] must be a valid email',
+        'boolType' => '[{{name}}] must be a boolean type',
+        'length' => '[{{name}}] length must be between {{minValue}} and {{maxValue}}',
+        'number' => '[{{name}}] must be a number',
+        'notEmpty' => '[{{name}}] must not empty',
+        'noWhitespace' => '[{{name}}|username] cannot contain spaces',
+    ];
+
     public function index(Request $request)
     {
         return json(['message' => "Rynest => Admin API v1"]);
