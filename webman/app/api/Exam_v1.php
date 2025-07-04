@@ -87,7 +87,7 @@ class Exam_v1
             // return json(date_create($schedule->open_registration));
 
             // Anticipate backward compatibility
-            if ($schedule->open_registration != null && $schedule->close_registration != null && $exam_result != null) {
+            if ($schedule->open_registration != null && $schedule->close_registration != null) {
                 $openReg = date_create($schedule->open_registration);
                 $closeReg = date_create($schedule->close_registration);
                 $inputDate = date_create($data->datetime);

