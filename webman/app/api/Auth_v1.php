@@ -5,6 +5,7 @@ namespace app\api;
 use support\Request;
 use Firuze\Jwt\JwtToken;
 use Bcrypt\Bcrypt;
+use Exception;
 use Respect\Validation\Validator as v;
 use Respect\Validation\Exceptions\NestedValidationException;
 use support\Db;
@@ -176,6 +177,7 @@ class Auth_v1
             }
 
             $member = Db::table('members')->where('user_id', $user->id)->first();
+            if ($member == null) throw new Exception("Your account member has been locked !");
 
             $payload = [
                 'id' => $user->id,
