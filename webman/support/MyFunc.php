@@ -134,7 +134,11 @@ class MyFunc
 
             $s3 = new S3Client([
                 'region' => $region,
-                'credentials' => ['key' => $aws_key, 'secret' => $aws_secret]
+                'credentials' => ['key' => $aws_key, 'secret' => $aws_secret],
+                'http' => [
+                    'connect_timeout' => 5,
+                    'timeout' => 10,
+                ],
             ]);
 
             if ($file && $file->isValid()) {
