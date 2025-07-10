@@ -45,17 +45,17 @@ class Member_v1
             $company = Db::table('companies')->where('id', $member->company_id ?? null)->first();
 
             Db::commit();
+
+            // LAST STAGE (Output Process)
+            // ===========================
+            $result = (object) [];
+            $result = $member;
+            $result->company = $company;
+            return json($result);
         } catch (\Throwable $th) {
             Db::rollBack();
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
-
-        // LAST STAGE (Output Process)
-        // ===========================
-        $result = (object) [];
-        $result = $member;
-        $result->company = $company;
-        return json($result);
     }
 
     public function certificate(Request $request)
@@ -77,15 +77,15 @@ class Member_v1
                 ->first();
 
             Db::commit();
+
+            // LAST STAGE (Output Process)
+            // ===========================
+            $result = $certificate;
+            return json($result);
         } catch (\Throwable $th) {
             Db::rollBack();
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
-
-        // LAST STAGE (Output Process)
-        // ===========================
-        $result = $certificate;
-        return json($result);
     }
 
     public function upload_photo(Request $request)
@@ -138,13 +138,13 @@ class Member_v1
             $result = ['url' => $url];
 
             Db::commit();
+
+            // LAST STAGE (Output Process)
+            // ===========================
+            return json($result);
         } catch (\Throwable $th) {
             Db::rollBack();
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
-
-        // LAST STAGE (Output Process)
-        // ===========================
-        return json($result);
     }
 }

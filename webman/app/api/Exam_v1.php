@@ -122,25 +122,26 @@ class Exam_v1
             }
 
             Db::commit();
+
+            // LAST STAGE (Output Process)
+            // ===========================
+            $result = $schedule;
+            $result->state = $state;
+            $result->category = $category;
+            $result->category->min_point = $min_point;
+            $result->photo_start = $photo_start;
+            $result->photo_finish = $photo_finish;
+            $result->photos = $photos;
+
+            // Save to Redis
+            Redis::set($redisKey, json_encode($result));
+            Redis::expire($redisKey, 10);
+
+            return json($result);
         } catch (\Throwable $th) {
             Db::rollBack();
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
-
-        // LAST STAGE (Output Process)
-        // ===========================
-        $result = $schedule;
-        $result->state = $state;
-        $result->category = $category;
-        $result->category->min_point = $min_point;
-        $result->photo_start = $photo_start;
-        $result->photo_finish = $photo_finish;
-        $result->photos = $photos;
-
-        // Save to Redis
-        Redis::set($redisKey, json_encode($result));
-        Redis::expire($redisKey, 10);
-        return json($result);
     }
 
     // Examination State :
@@ -334,36 +335,36 @@ class Exam_v1
                 ]);
 
             Db::commit();
+            
+            // LAST STAGE (Output Process)
+            // ===========================
+            // Clearing the output
+            unset($exam_result->answer_keys);
+            unset($exam_result->the_keys);
+            unset($exam_result->status);
+            unset($exam_result->cek_score);
+
+            $result = $exam_result;
+            $result->duration ??= $category->duration;
+            $result->real_duration = $real_duration;
+            $result->passed_grade ??= $category->passed_grade;
+            $result->score = $score;
+            $result->check_score = $check_score;
+            $result->desc1 = $desc1;
+            $result->desc2 = 'Minimum Jawaban Benar adalah 42 dari total soal yang diujikan.';
+            $result->photo_start = $photo_start;
+            $result->photo_finish = $photo_finish;
+            $result->state = $status;
+            $result->session = $exam_session;
+
+            // Save to Redis
+            Redis::set($redisKey, json_encode($result));
+            Redis::expire($redisKey, 10);
+            return json($result);
         } catch (\Throwable $th) {
             Db::rollBack();
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
-
-        // LAST STAGE (Output Process)
-        // ===========================
-        // Clearing the output
-        unset($exam_result->answer_keys);
-        unset($exam_result->the_keys);
-        unset($exam_result->status);
-        unset($exam_result->cek_score);
-
-        $result = $exam_result;
-        $result->duration ??= $category->duration;
-        $result->real_duration = $real_duration;
-        $result->passed_grade ??= $category->passed_grade;
-        $result->score = $score;
-        $result->check_score = $check_score;
-        $result->desc1 = $desc1;
-        $result->desc2 = 'Minimum Jawaban Benar adalah 42 dari total soal yang diujikan.';
-        $result->photo_start = $photo_start;
-        $result->photo_finish = $photo_finish;
-        $result->state = $status;
-        $result->session = $exam_session;
-
-        // Save to Redis
-        Redis::set($redisKey, json_encode($result));
-        Redis::expire($redisKey, 10);
-        return json($result);
     }
 
     // function _get_exam_photos(int $schedule_request_id, int $id_member): ?object
@@ -435,29 +436,29 @@ class Exam_v1
             }
 
             // Db::commit();
+
+            // LAST STAGE (Output Process)
+            // ===========================
+            // Clearing the output
+            unset($exam_result->id_member);
+            unset($exam_result->schedule_request_id);
+            unset($exam_result->category_id);
+            unset($exam_result->ip_address);
+            unset($exam_result->location);
+            unset($exam_result->device);
+            unset($exam_result->cek_score);
+            unset($exam_result->status);
+            unset($exam_result->score);
+            unset($exam_result->passed_grade);
+            // unset($exam_result->duration);
+            // unset($exam_result->questions);
+
+            $result = $exam_result;
+            return json($result);
         } catch (\Throwable $th) {
             // Db::rollBack();
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
-
-        // LAST STAGE (Output Process)
-        // ===========================
-        // Clearing the output
-        unset($exam_result->id_member);
-        unset($exam_result->schedule_request_id);
-        unset($exam_result->category_id);
-        unset($exam_result->ip_address);
-        unset($exam_result->location);
-        unset($exam_result->device);
-        unset($exam_result->cek_score);
-        unset($exam_result->status);
-        unset($exam_result->score);
-        unset($exam_result->passed_grade);
-        // unset($exam_result->duration);
-        // unset($exam_result->questions);
-
-        $result = $exam_result;
-        return json($result);
     }
 
     public function start(Request $request)
@@ -615,27 +616,27 @@ class Exam_v1
             }
 
             Db::commit();
+
+            // LAST STAGE (Output Process)
+            // ===========================
+            // Clearing the output
+            unset($exam_result->id_member);
+            unset($exam_result->schedule_request_id);
+            unset($exam_result->category_id);
+            unset($exam_result->ip_address);
+            unset($exam_result->location);
+            unset($exam_result->device);
+            unset($exam_result->cek_score);
+            unset($exam_result->status);
+            unset($exam_result->score);
+            unset($exam_result->passed_grade);
+
+            $result = $exam_result;
+            return json($result);
         } catch (\Throwable $th) {
             Db::rollBack();
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
-
-        // LAST STAGE (Output Process)
-        // ===========================
-        // Clearing the output
-        unset($exam_result->id_member);
-        unset($exam_result->schedule_request_id);
-        unset($exam_result->category_id);
-        unset($exam_result->ip_address);
-        unset($exam_result->location);
-        unset($exam_result->device);
-        unset($exam_result->cek_score);
-        unset($exam_result->status);
-        unset($exam_result->score);
-        unset($exam_result->passed_grade);
-
-        $result = $exam_result;
-        return json($result);
     }
 
     public function answer(Request $request)
@@ -698,15 +699,15 @@ class Exam_v1
                 ]);
 
             Db::commit();
+
+            // LAST STAGE (Output Process)
+            // ===========================
+            $result = ['message' => 'done'];
+            return json($result);
         } catch (\Throwable $th) {
             Db::rollBack();
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
-
-        // LAST STAGE (Output Process)
-        // ===========================
-        $result = ['message' => 'done'];
-        return json($result);
     }
 
     public function check_score(Request $request)
@@ -796,21 +797,21 @@ class Exam_v1
             }
 
             Db::commit();
+
+            // LAST STAGE (Output Process)
+            // ===========================
+            $exam_result->check_score = $exam_result->cek_score;
+            // Clearing the output
+            unset($exam_result->answer_keys);
+            unset($exam_result->the_keys);
+            unset($exam_result->cek_score);
+
+            $result = $exam_result;
+            return json($result);
         } catch (\Throwable $th) {
             Db::rollBack();
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
-
-        // LAST STAGE (Output Process)
-        // ===========================
-        $exam_result->check_score = $exam_result->cek_score;
-        // Clearing the output
-        unset($exam_result->answer_keys);
-        unset($exam_result->the_keys);
-        unset($exam_result->cek_score);
-
-        $result = $exam_result;
-        return json($result);
     }
 
     public function finish(Request $request)
@@ -874,15 +875,15 @@ class Exam_v1
                 ]);
 
             Db::commit();
+
+            // LAST STAGE (Output Process)
+            // ===========================
+            $result = ['message' => 'done'];
+            return json($result);
         } catch (\Throwable $th) {
             Db::rollBack();
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
-
-        // LAST STAGE (Output Process)
-        // ===========================
-        $result = ['message' => 'done'];
-        return json($result);
     }
 
     public function question(Request $request)
@@ -942,22 +943,22 @@ class Exam_v1
             }
 
             Db::commit();
+
+            // LAST STAGE (Output Process)
+            // ===========================
+            // Clearing the output
+            unset($question->answer_option_a);
+            unset($question->answer_option_b);
+            unset($question->answer_option_c);
+            unset($question->answer_option_d);
+            // unset($question->answer_key);
+
+            $result = $question;
+            return json($result);
         } catch (\Throwable $th) {
             Db::rollBack();
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
-
-        // LAST STAGE (Output Process)
-        // ===========================
-        // Clearing the output
-        unset($question->answer_option_a);
-        unset($question->answer_option_b);
-        unset($question->answer_option_c);
-        unset($question->answer_option_d);
-        // unset($question->answer_key);
-
-        $result = $question;
-        return json($result);
     }
 
     /**
@@ -1050,18 +1051,18 @@ class Exam_v1
             }
 
             Db::commit();
+
+            // LAST STAGE (Output Process)
+            // ===========================
+            // $result = new stdClass;
+            // $result->question_ids = $exam_result->question_ids;
+            // $result->questions = $shuffleQuestions;
+            $result = $shuffleQuestions;
+            return json($result);
         } catch (\Throwable $th) {
             Db::rollBack();
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
-
-        // LAST STAGE (Output Process)
-        // ===========================
-        // $result = new stdClass;
-        // $result->question_ids = $exam_result->question_ids;
-        // $result->questions = $shuffleQuestions;
-        $result = $shuffleQuestions;
-        return json($result);
     }
 
     private function _start_session(int $schedule_request_id, int $id_member, string $device_id)
@@ -1131,18 +1132,18 @@ class Exam_v1
                 ->get();
 
             Db::commit();
+
+            // LAST STAGE (Output Process)
+            // ===========================
+            $result = $photos;
+            // Save to Redis
+            Redis::set($redisKey, json_encode($result));
+            Redis::expire($redisKey, 10);
+            return json($result);
         } catch (\Throwable $th) {
             Db::rollBack();
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
-
-        // LAST STAGE (Output Process)
-        // ===========================
-        $result = $photos;
-        // Save to Redis
-        Redis::set($redisKey, json_encode($result));
-        Redis::expire($redisKey, 10);
-        return json($result);
     }
 
     public function upload_photo(Request $request)
@@ -1204,15 +1205,15 @@ class Exam_v1
             }
 
             Db::commit();
+
+            // LAST STAGE (Output Process)
+            // ===========================
+            $result = ['url' => $url];
+            return json($result);
         } catch (\Throwable $th) {
             Db::rollBack();
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
-
-        // LAST STAGE (Output Process)
-        // ===========================
-        $result = ['url' => $url];
-        return json($result);
     }
 }
 

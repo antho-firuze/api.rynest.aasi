@@ -192,15 +192,15 @@ class Auth_v1
             $result = JwtToken::generateToken($payload);
 
             Db::commit();
+
+            // LAST STAGE (Output Process)
+            // ===========================
+            $result['user'] = $payload;
+            return json($result);
         } catch (\Throwable $th) {
             Db::rollBack();
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
-
-        // LAST STAGE (Output Process)
-        // ===========================
-        $result['user'] = $payload;
-        return json($result);
     }
 
     /**
@@ -284,6 +284,12 @@ class Auth_v1
             } else {
                 Db::commit();
             }
+
+            // LAST STAGE (Output Process)
+            // ===========================
+            $result['user'] = $payload;
+            $result['verification_code'] = $code;
+            return json($result);
         } catch (\Throwable $th) {
             Db::rollBack();
             $error['code'] = $th->errorInfo[1] ?? 0;
@@ -291,12 +297,6 @@ class Auth_v1
             $error['trace'] = $th->getTrace();
             return jsonr($error);
         }
-
-        // LAST STAGE (Output Process)
-        // ===========================
-        $result['user'] = $payload;
-        $result['verification_code'] = $code;
-        return json($result);
     }
 
     /**
@@ -347,15 +347,15 @@ class Auth_v1
             } else {
                 Db::commit();
             }
+
+            // LAST STAGE (Output Process)
+            // ===========================
+            $result['message'] = $this->ok;
+            return json($result);
         } catch (\Throwable $th) {
             Db::rollBack();
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
-
-        // LAST STAGE (Output Process)
-        // ===========================
-        $result['message'] = $this->ok;
-        return json($result);
     }
 
     /**
@@ -415,15 +415,15 @@ class Auth_v1
             } else {
                 Db::commit();
             }
+
+            // LAST STAGE (Output Process)
+            // ===========================
+            $result['message'] = $this->ok;
+            return json($result);
         } catch (\Throwable $th) {
             Db::rollBack();
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
-
-        // LAST STAGE (Output Process)
-        // ===========================
-        $result['message'] = $this->ok;
-        return json($result);
     }
 
     /**
@@ -436,11 +436,11 @@ class Auth_v1
     {
         try {
             $result = JwtToken::refreshToken();
+
+            return json($result);
         } catch (\Throwable $th) {
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
-
-        return json($result);
     }
 
     /**
@@ -507,15 +507,15 @@ class Auth_v1
             } else {
                 Db::commit();
             }
+
+            // LAST STAGE (Output Process)
+            // ===========================
+            $result['verification_code'] = $code;
+            return json($result);
         } catch (\Throwable $th) {
             Db::rollBack();
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
-
-        // LAST STAGE (Output Process)
-        // ===========================
-        $result['verification_code'] = $code;
-        return json($result);
     }
 
     /**
@@ -606,15 +606,15 @@ class Auth_v1
             } else {
                 Db::commit();
             }
+
+            // LAST STAGE (Output Process)
+            // ===========================
+            $result['verification_code'] = $code;
+            return json($result);
         } catch (\Throwable $th) {
             Db::rollBack();
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
-
-        // LAST STAGE (Output Process)
-        // ===========================
-        $result['verification_code'] = $code;
-        return json($result);
     }
 
     /**
@@ -673,14 +673,14 @@ class Auth_v1
             } else {
                 Db::commit();
             }
+
+            // LAST STAGE (Output Process)
+            // ===========================
+            return jsonr($result);
         } catch (\Throwable $th) {
             Db::rollBack();
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
-
-        // LAST STAGE (Output Process)
-        // ===========================
-        return jsonr($result);
     }
 
     /**
@@ -731,15 +731,15 @@ class Auth_v1
             } else {
                 Db::commit();
             }
+
+            // LAST STAGE (Output Process)
+            // ===========================
+            $result['message'] = $this->ok;
+            return json($result);
         } catch (\Throwable $th) {
             Db::rollBack();
             return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
         }
-
-        // LAST STAGE (Output Process)
-        // ===========================
-        $result['message'] = $this->ok;
-        return json($result);
     }
 
     private function _check_pwd($plaintext, $encryptedtext)
