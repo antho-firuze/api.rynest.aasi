@@ -15,6 +15,9 @@ services:
       - ./webman:/webman
       # This prevents the first volume from overriding the contents (especially for vendor folder).
       - /webman/vendor
+    depends_on:
+      - nginx
+      - redis
 
   nginx:
     build:
@@ -37,12 +40,12 @@ services:
     ports:
       - 6379:6379
     working_dir: /data
-    # volumes:
-    #   - redisdata:/data
+    volumes:
+      - redisdata:/data
     environment:
       - REDIS_REPLICATION_MODE=master
       - REDIS_HOST=127.0.0.1
 
-# volumes:
-#   redisdata:
-#     driver: local
+volumes:
+  redisdata:
+    driver: local
