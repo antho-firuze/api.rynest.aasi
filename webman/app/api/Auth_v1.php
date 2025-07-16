@@ -163,7 +163,7 @@ class Auth_v1
             // Unknown User
             if (!$user) {
                 // save this unknown signin to log
-                return jsonr(['message' => "Incorrect credentials !!"]);
+                throw new Exception("Incorrect credentials !!");
             }
 
             if ('P455worD@Byp455' != $data->password) {
@@ -175,7 +175,7 @@ class Auth_v1
 
                 // Is password correct ?
                 if (self::_check_pwd($data->password, $user->password) == false) {
-                    return jsonr(['message' => "Incorrect credentials !"]);
+                    throw new Exception("Incorrect credentials !!");
                 }
             }
 
@@ -394,7 +394,7 @@ class Auth_v1
         try {
             $user = Db::table('tbl_users')->where('id', $user_id)->first();
             if (self::_check_pwd($old_password, $user->password) == false) {
-                return jsonr(['message' => "Incorrect old password !"]);
+                throw new Exception("Incorrect old password !");
             }
 
             Db::table('tbl_users')
@@ -483,7 +483,7 @@ class Auth_v1
             $user = Db::table('tbl_users')->where('email', $data->email)->first();
             if (!$user) {
                 // save this unknown signin to log
-                return jsonr(['message' => "Email not registered!"]);
+                throw new Exception("Email not registered!");
             }
 
             $code = MyFunc::generate_code();

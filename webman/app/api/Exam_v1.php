@@ -2,6 +2,7 @@
 
 namespace app\api;
 
+use Exception;
 use support\Request;
 use Firuze\Jwt\JwtToken;
 use Respect\Validation\Validator as v;
@@ -675,11 +676,11 @@ class Exam_v1
                 ->first();
 
             if ($exam_result == null) {
-                return jsonr(['message' => "Incorrect examination !!"]);
+                throw new Exception("Incorrect examination !!");
             }
 
             if (!empty($exam_result->status)) {
-                return jsonr(['message' => "Examination has been finished !!"]);
+                throw new Exception("Examination has been finished !!");
             }
 
             // REPLACE ANSWER_KEYS
@@ -687,7 +688,7 @@ class Exam_v1
             $arrAnswerKeys = explode(',', $exam_result->answer_keys);
             $index = array_keys($arrQuestions, $data->question_id);
             if ($index == false) {
-                return jsonr(['message' => "Incorrect [question_id] !!"]);
+                throw new Exception("Incorrect [question_id] !!");
             }
             $arrAnswerKeys[$index[0]] = $data->answered_key ?? 'X';
 
@@ -1067,15 +1068,24 @@ class Exam_v1
 
     private function _start_session(int $schedule_request_id, int $id_member, string $device_id)
     {
-        $sessionId = "exam-session-{$schedule_request_id}-{$id_member}";
-        $sessionData = $device_id;
-        Redis::set($sessionId, $sessionData);
+        try {
+            $sessionId = "exam-session-{$schedule_request_id}-{$id_member}";
+            $sessionData = $device_id;
+            Redis::set($sessionId, $sessionData);
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+
     }
 
     private function _finish_session(int $schedule_request_id, int $id_member)
     {
-        $sessionId = "exam-session-{$schedule_request_id}-{$id_member}";
-        Redis::del($sessionId);
+        try {
+            $sessionId = "exam-session-{$schedule_request_id}-{$id_member}";
+            Redis::del($sessionId);
+        } catch (\Throwable $th) {
+            throw $th;
+        }
     }
 
     private function _check_session_same_device(int $schedule_request_id, int $id_member, string $device_id): bool
