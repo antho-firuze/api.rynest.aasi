@@ -45,6 +45,14 @@ services:
     environment:
       - REDIS_REPLICATION_MODE=master
       - REDIS_HOST=127.0.0.1
+    command:
+      [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--replica-read-only",
+        "no",
+      ]
 
 volumes:
   redisdata:
