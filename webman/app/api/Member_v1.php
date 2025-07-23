@@ -43,7 +43,7 @@ class Member_v1
         try {
             $user = Db::table('tbl_users')->where('id', $user_id)->first();
             $member = Db::table('members')->where('user_id', $user_id)->first();
-            $company = Db::table('companies')->where('id', $member->company_id ?? null)->first();
+            $company = Db::table('mst_anggota')->where('id', $member->company_id ?? null)->first();
 
             Db::commit();
 
