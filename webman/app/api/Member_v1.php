@@ -41,6 +41,7 @@ class Member_v1
         // ===========================
         Db::beginTransaction();
         try {
+            $user = Db::table('tbl_users')->where('id', $user_id)->first();
             $member = Db::table('members')->where('user_id', $user_id)->first();
             $company = Db::table('companies')->where('id', $member->company_id ?? null)->first();
 
@@ -50,6 +51,7 @@ class Member_v1
             // ===========================
             $result = (object) [];
             $result = $member;
+            $result->email = $user->email;
             $result->company = $company;
             return json($result);
         } catch (\Throwable $th) {
