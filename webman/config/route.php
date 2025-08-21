@@ -40,6 +40,7 @@ Route::group('/api/v1/admin', function () {
     Route::post('/member', [app\api\Admin_v1::class, 'member']);
     Route::post('/update_schedule', [app\api\Admin_v1::class, 'update_schedule']);
     Route::post('/clear_exam', [app\api\Admin_v1::class, 'clear_exam']);
+    Route::post('/update_exam_result_compatibility', [app\api\Admin_v1::class, 'update_exam_result_compatibility']);
 })->middleware([
     app\middleware\VerifyAPIToken::class,
 ]);

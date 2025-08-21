@@ -228,7 +228,7 @@ class Exam_v1
         // Db::beginTransaction();
         try {
             $exam_result = Db::table('exam_results')
-                ->selectRaw('id, category_id, score, status, note, click_score, cek_score, questions, passed_grade, duration, start_at, finish_at, answer_keys, the_keys, restart, device, ip_address, location')
+                ->selectRaw('id, category_id, score, status, note, click_score, cek_score, questions, passed_grade, duration, start_at, finish_at, question_ids, answer_keys, the_keys, restart, device, ip_address, location')
                 ->where('schedule_request_id', $data->schedule_request_id ?? null)
                 ->where('id_member', $id_member)
                 ->first();
@@ -264,6 +264,34 @@ class Exam_v1
             $arrCount = array_count_values($arrAnswerKeys);
             $countNotAnswered = $arrCount['X'] ?? 0;
             $exam_result->answered_count = $exam_result->questions - $countNotAnswered;
+
+            // This is for compatibily with old version
+            // - The old version is not record field the_keys, this cause error
+            // ===================================================================
+            if ($exam_result->the_keys == null) {
+                // GET the question id from field question_ids
+                $arrIds = [];
+                $arrQuestionIds = [];
+                $items = explode(',', $exam_result->question_ids);
+                foreach ($items as $item) {
+                    $Id = substr(trim($item), 0, 4);
+                    $arrIds[] = $Id;
+                    $arrQuestionIds[intval($Id)] = "X";
+                }
+
+                // UPDATE array of question with the keys
+                $question = Db::table('questions')->selectRaw('id, answer_key')
+                    ->where('module_id', $category->module_id)
+                    ->get()->toArray();
+                foreach ($question as $key => $value) {
+                    if (in_array($value->id, $arrIds)) {
+                        $arrQuestionIds[$value->id] = $value->answer_key;
+                    }
+                }
+                $the_keys = implode(",", $arrQuestionIds);
+                $exam_result->the_keys = $the_keys;
+            }
+            // ===================================================================
 
             // Right-answered question count
             $arrTheKeys = explode(',', $exam_result->the_keys);
@@ -340,6 +368,7 @@ class Exam_v1
             // LAST STAGE (Output Process)
             // ===========================
             // Clearing the output
+            unset($exam_result->question_ids);
             unset($exam_result->answer_keys);
             unset($exam_result->the_keys);
             unset($exam_result->status);
