@@ -158,7 +158,10 @@ class Auth_v1
         // ===========================
         Db::beginTransaction();
         try {
-            $user = Db::table('tbl_users')->where('username', $data->identifier)->first();
+            $user = Db::table('tbl_users')
+                ->where('username', $data->identifier)
+                ->orWhereRaw("LOWER(email) = ?", [strtolower($data->identifier)])
+                ->first();
 
             // Unknown User
             if (!$user) {
@@ -554,7 +557,7 @@ class Auth_v1
         Db::beginTransaction();
         try {
             $user = Db::table('tbl_users')->where('id', $user_id)->first();
-            
+
             $code = MyFunc::generate_code();
             Db::table('tbl_users')
                 ->where('id', $user_id)

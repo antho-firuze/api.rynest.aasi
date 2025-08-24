@@ -7,6 +7,7 @@ use Firuze\Jwt\JwtToken;
 use support\Db;
 use Respect\Validation\Validator as v;
 use Respect\Validation\Exceptions\NestedValidationException;
+use Respect\Validation\Rules\Lowercase;
 
 class Admin_v1
 {
@@ -35,7 +36,10 @@ class Admin_v1
         $data = (object) $request->post();
 
         try {
-            $user = Db::table('tbl_users')->where('username', $data->identifier)->first();
+            $user = Db::table('tbl_users')
+                ->where('username', $data->identifier)
+                ->orWhereRaw("LOWER(email) = ?", [strtolower($data->identifier)])
+                ->first();
             if ($user == null) return jsonr(["message" => "User not found"]);
 
             $member = Db::table('members')->where('user_id', $user->id ?? null)->first();
