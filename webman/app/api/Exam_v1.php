@@ -558,7 +558,7 @@ class Exam_v1
                     'questions'           => $category->questions,
                     'passed_grade'        => $category->passed_grade,
                     'duration'            => $category->duration,
-                    'start_at'            => $data->start_at ?? date('Y-m-d H:i:s'),
+                    'start_at'            => date('Y-m-d H:i:s'),
                     'finish_at'           => null,
                     'restart'             => 0,
                     'device'              => $data->device_id ?? '',
