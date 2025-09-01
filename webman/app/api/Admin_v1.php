@@ -68,7 +68,7 @@ class Admin_v1
                 ->where('categories.id', $schedule->category_id ?? null)->first();
             $location = Db::table('locations')->where('id', $schedule->location_id ?? null)->first();
             $exam_result = Db::table('exam_results')
-                ->selectRaw('id, id_member, member_id, category_id, schedule_request_id, question_ids, answer_keys, score, status, click_score, questions, passed_grade, duration, start_at, finish_at, answer_keys, the_keys, restart, device, ip_address, location')
+                ->selectRaw('id, id_member, member_id, category_id, schedule_request_id, question_ids, answer_keys, score, status, `note`, click_score, questions, passed_grade, duration, start_at, finish_at, answer_keys, the_keys, restart, device, ip_address, location')
                 ->where('schedule_request_id', $schedule->schedule_request_id ?? null)
                 ->where('id_member', $member->id ?? null)
                 ->first();
@@ -132,7 +132,7 @@ class Admin_v1
                 ->where('categories.id', $schedule->category_id ?? null)->first();
             $location = Db::table('locations')->where('id', $schedule->location_id ?? null)->first();
             $exam_result = Db::table('exam_results')
-                ->selectRaw('id, id_member, member_id, category_id, schedule_request_id, question_ids, answer_keys, score, status, click_score, questions, passed_grade, duration, start_at, finish_at, answer_keys, the_keys, restart, device, ip_address, location')
+                ->selectRaw('id, id_member, member_id, category_id, schedule_request_id, question_ids, answer_keys, score, status, `note`, click_score, questions, passed_grade, duration, start_at, finish_at, answer_keys, the_keys, restart, device, ip_address, location')
                 ->where('schedule_request_id', $schedule->schedule_request_id ?? null)
                 ->where('id_member', $member->id ?? null)
                 ->first();

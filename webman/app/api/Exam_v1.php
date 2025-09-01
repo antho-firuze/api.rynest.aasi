@@ -558,7 +558,7 @@ class Exam_v1
                     'questions'           => $category->questions,
                     'passed_grade'        => $category->passed_grade,
                     'duration'            => $category->duration,
-                    'start_at'            => date('Y-m-d H:i:s'),
+                    'start_at'            => $data->start_at ?? date('Y-m-d H:i:s'),
                     'finish_at'           => null,
                     'restart'             => 0,
                     'device'              => $data->device_id ?? '',
@@ -589,7 +589,7 @@ class Exam_v1
                         'device_name'   => $data->device_name ?? '',
                         'ip_address'    => $data->ip_address ?? '',
                         'location'      => $data->location ?? '',
-                        'restart_at'    => date('Y-m-d H:i:s'),
+                        'restart_at'    => $data->start_at ?? date('Y-m-d H:i:s'),
                     ]);
 
                 // START EXAM SESSION
@@ -624,7 +624,7 @@ class Exam_v1
                         'device_name'   => $data->device_name ?? '',
                         'ip_address'    => $data->ip_address ?? '',
                         'location'      => $data->location ?? '',
-                        'restart_at'    => date('Y-m-d H:i:s'),
+                        'restart_at'    => $data->start_at ?? date('Y-m-d H:i:s'),
                     ]);
 
                 // SECURITY CHECK: If difference Device is detected

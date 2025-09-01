@@ -42,13 +42,14 @@ class Task
     }
 
     // Cronjob for update an exam status where timed has been execeded, executed every minutes.
+    // Duration add 120 minutes (for safety timezone WITA+1/WIT+2)
     function _update_exam_status()
     {
         Db::table('exam_results')
             ->where('status', '=', '')
             ->where('start_at', '<>', null)
             ->where('finish_at', '=', null)
-            ->whereRaw('(start_at + INTERVAL duration MINUTE) < NOW()')
+            ->whereRaw('(start_at + INTERVAL (duration + 120) MINUTE) < NOW()')
             ->update([
                 'status' => 'completed',
                 'finish_at' => date('Y-m-d H:i:s'),
