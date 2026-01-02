@@ -81,7 +81,7 @@ class Exam_v1
                 ->first();
 
             $category = Db::table('categories')
-                ->selectRaw('categories.id, categories.name, categories.description, categories.duration, categories.passed_grade, module_id, modules.name as module_name, questions, easy, medium, hard, status')
+                ->selectRaw('categories.id, categories.name, categories.description, categories.duration, categories.passed_grade, module_id, modules.name as module_name, questions, easy, medium, hard, category_modules.status')
                 ->join('category_modules', 'categories.id', '=', 'category_modules.category_id')
                 ->join('modules', 'category_modules.module_id', '=', 'modules.id')
                 ->where('categories.id', $schedule->category_id ?? null)->first();
