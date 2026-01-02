@@ -244,7 +244,7 @@ class Exam_v1
                 ->get();
 
             $category = Db::table('categories')
-                ->selectRaw('categories.id, categories.name, categories.description, categories.duration, categories.passed_grade, module_id, modules.name as module_name, questions, easy, medium, hard, status')
+                ->selectRaw('categories.id, categories.name, categories.description, categories.duration, categories.passed_grade, module_id, modules.name as module_name, questions, easy, medium, hard, category_modules.status')
                 ->join('category_modules', 'categories.id', '=', 'category_modules.category_id')
                 ->join('modules', 'category_modules.module_id', '=', 'modules.id')
                 ->where('categories.id', $exam_result->category_id ?? null)->first();
@@ -449,7 +449,7 @@ class Exam_v1
                 ->first();
 
             $category = Db::table('categories')
-                ->selectRaw('categories.id, categories.name, categories.description, categories.duration, categories.passed_grade, module_id, modules.name as module_name, questions, easy, medium, hard, status')
+                ->selectRaw('categories.id, categories.name, categories.description, categories.duration, categories.passed_grade, module_id, modules.name as module_name, questions, easy, medium, hard, category_modules.status')
                 ->join('category_modules', 'categories.id', '=', 'category_modules.category_id')
                 ->join('modules', 'category_modules.module_id', '=', 'modules.id')
                 ->where('categories.id', $data->category_id)->first();
@@ -521,7 +521,7 @@ class Exam_v1
                 ->first();
 
             $category = Db::table('categories')
-                ->selectRaw('categories.id, categories.name, categories.description, categories.duration, categories.passed_grade, module_id, modules.name as module_name, questions, easy, medium, hard, status')
+                ->selectRaw('categories.id, categories.name, categories.description, categories.duration, categories.passed_grade, module_id, modules.name as module_name, questions, easy, medium, hard, category_modules.status')
                 ->join('category_modules', 'categories.id', '=', 'category_modules.category_id')
                 ->join('modules', 'category_modules.module_id', '=', 'modules.id')
                 ->where('categories.id', $data->category_id)->first();
