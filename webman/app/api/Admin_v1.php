@@ -371,4 +371,48 @@ class Admin_v1
 
         return json($exam_result);
     }
+
+    public function task(Request $request)
+    {
+        $data = (object) $request->post();
+        // This is for testing the cronjob, you can call this endpoint to trigger the cron job function, but you need to set the commit to true to execute the update query
+        try {
+            if (isset($data->id_member) && isset($data->schedule_request_id)) {
+                $exam_results = Db::table('exam_results')
+                    ->where('status', '=', '')
+                    ->where('start_at', '<>', null)
+                    ->where('finish_at', '=', null)
+                    ->where('id_member', $data->id_member)
+                    ->where('schedule_request_id', $data->schedule_request_id)
+                    ->whereRaw('(start_at + INTERVAL (duration + 120) MINUTE) < NOW()')
+                    ->get();
+            } else {
+                $exam_results = Db::table('exam_results')
+                    ->where('status', '=', '')
+                    ->where('finish_at', '=', null)
+                    ->where('start_at', '<>', null)
+                    // ->whereRaw('start_at is not null')
+                    ->whereRaw('(start_at + INTERVAL (duration + 120) MINUTE) < NOW()')
+                    ->get();
+            }
+            // $exam_results = Db::table('exam_results')
+            //     ->where('status', '=', '')
+            //     ->where('start_at', '<>', null)
+            //     ->where('finish_at', '=', null)
+            //     ->whereRaw('(start_at + INTERVAL (duration + 120) MINUTE) < NOW()')
+            //     ->update([
+            //         'status' => 'completed',
+            //         'finish_at' => date('Y-m-d H:i:s'),
+            //         'note' => 'update status [completed] by system',
+            //     ]);
+
+            $result = (object) [];
+            $result->exam_count = count($exam_results);
+            $result->exam_results = $exam_results;
+            return json($result);
+        } catch (\Throwable $th) {
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+        }
+        
+    }
 }

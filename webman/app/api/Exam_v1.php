@@ -1216,7 +1216,7 @@ class Exam_v1
             $config['file_name'] = "{$type}-{$id_member}";
             $config['folder'] = "images/examination/{$data->schedule_request_id}/";
             $config['allowed_types'] = ['jpg', 'png', 'bmp', 'gif'];
-            $config['max_size'] = 1000; // in KB, default 1000KB = 1MB
+            $config['max_size'] = 2000; // in KB, default 1000KB = 1MB
             $url = MyFunc::upload_s3($request, $config);
 
             $photo = Db::table('participant_photo')
