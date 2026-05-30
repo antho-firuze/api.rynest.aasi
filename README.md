@@ -1,68 +1,82 @@
 # api.rynest.aasi
 
-**api.rynest.aasi** adalah sebuah aplikasi Web API yang dibangun menggunakan **Webman/Workerman** (framework PHP) dan menggunakan **MySQL** sebagai database. Aplikasi ini di-containerisasi menggunakan **Docker** untuk memudahkan deployment dan pengembangan.
+[![PHP Version](https://img.shields.io/badge/php-8.2-777bb4.svg)](https://www.php.net/)
+[![Framework](https://img.shields.io/badge/framework-Webman%20%2F%20Workerman-00b2b2.svg)](https://www.workerman.net/webman)
+[![Docker](https://img.shields.io/badge/docker-supported-2496ed.svg)](https://www.docker.com/)
+
+`api.rynest.aasi` adalah aplikasi Web API performa tinggi yang dibangun menggunakan **Webman / Workerman** (PHP Framework berbasis *event-driven* dan *non-blocking* menggunakan komponen Swoole/Workerman) dengan **MySQL** sebagai penyimpanan data utama. Aplikasi ini dirancang tangguh untuk menangani lalu lintas tinggi dan telah dikontainerisasi penuh menggunakan **Docker** untuk kemudahan pengembangan serta penerapan (*deployment*).
 
 ---
 
-## Fitur Utama
+## 🚀 Fitur Utama
 
-- **Fitur 1**: Dibangun menggunakan teknologi PHP terbaru yang setara dengan GoLang.
-- **Fitur 2**: Penyimpanan asset dan media sudah menggunakan AWS S3.
-- **Fitur 3**: Optimalisasi coding di semua bagian terutama pada proses ujian sertifikasi.
-- Dan yang lainnya...
-
----
-
-## Persyaratan Sistem
-
-Sebelum menjalankan aplikasi ini, pastikan sistem Anda memenuhi persyaratan berikut:
-
-- **Docker**: Versi 20.x atau lebih baru.
-- **Docker Compose**: Versi 1.29.x atau lebih baru.
-- **RAM**: Minimal 2GB.
-- **Ruang Penyimpanan**: Minimal 1GB.
+* **Performa Tinggi:** Menggunakan arsitektur *memory-resident* dari Webman, memberikan kecepatan eksekusi yang setara dengan GoLang/Node.js.
+* **Penyimpanan Cloud Terintegrasi:** Manajemen aset, media, dan dokumen ujian sepenuhnya menggunakan **AWS S3 Storage**.
+* **Proses Sertifikasi Optimal:** Optimalisasi kode khusus pada alur backend untuk menangani komputasi intensif dan konkurensi tinggi saat proses ujian sertifikasi berlangsung.
+* **Arsitektur API Modern:** Struktur kode bersih, terpisah, dan siap diintegrasikan dengan aplikasi klien (Mobile/Web).
 
 ---
 
-## Instalasi dengan Docker
+## 📋 Persyaratan Sistem
 
-Berikut adalah langkah-langkah untuk menjalankan aplikasi ini menggunakan Docker:
+Sebelum menjalankan aplikasi, pastikan mesin Anda sudah terpasang:
+* **Docker:** Versi `20.x` atau yang terbaru.
+* **Docker Compose:** Versi `1.29.x` atau yang terbaru.
+* **Spesifikasi Minimum:** RAM 2GB & Ruang Penyimpanan Kosong 1GB.
 
-1. **Clone Repository**:
+---
 
-   ```
-   git clone https://github.com/antho-firuze/api.rynest.aasi.git
-   cd api.rynest.aasi
-   ```
+## 🛠️ Panduan Instalasi & Menjalankan Aplikasi
 
-2. **Setup Environment**:
+Ikuti langkah-langkah berikut untuk menjalankan lingkungan pengembangan (*development environment*) menggunakan Docker:
 
-- Buat file `.env` di folder `./webman`
-- Rename file `.env.example` manjadi `.env`. Dan isi dengan konfigurasi yang sesuai.
-- (optional) hanya untuk keperluan development. Jika ingin meng-copy vendor yang ada pada container ke local storage, jalankan perintah ini.
-  `# docker cp api-aasi:/webman/vendor ./webman`
+### 1. Klon Repositori
+```bash
+git clone [https://github.com/antho-firuze/api.rynest.aasi.git](https://github.com/antho-firuze/api.rynest.aasi.git)
+cd api.rynest.aasi
 
-3. **Jalankan Docker Compose**:
+```
 
-   ```
-   # docker-compose up -d --build
+### 2. Konfigurasi Environment (`.env`)
 
-   atau
+Masuk ke direktori `webman`, salin berkas contoh konfigurasi, lalu sesuaikan nilai di dalamnya (seperti kredensial database dan AWS S3).
 
-   # docker compose up -d --build
-   ```
+```bash
+cd webman
+cp .env.example .env
+# Buka dan edit file .env sesuai kebutuhan Anda
+cd ..
 
-4. **Akses Aplikasi**:
+```
 
-- Web API akan berjalan di `http://localhost:8787`
-- Gunakan Postman atau sejenisnya untuk mengakses endpoint API.
+> 💡 **Tips Development:** Jika Anda membutuhkan folder `vendor` dari dalam kontainer Docker agar terbaca di text editor lokal (untuk *autocompletion* / *intellisense*), jalankan perintah ini setelah kontainer aktif:
+> ```bash
+> docker cp api-aasi:/webman/vendor ./webman
+> 
+> 
+> ```
+> 
+> 
 
-#
+```
 
-## Kontak
+### 3. Jalankan Docker Compose
+Kembali ke akar direktori proyek, lalu bangun dan jalankan kontainer di latar belakang (*detached mode*):
+```bash
+docker compose up -d --build
 
-Jika Anda memiliki pertanyaan atau masukan, silakan hubungi:
+```
 
-- **Nama**: Ahmad Hertanto
-- **Email**: [<antho.firuze@gmail.com>]
-- **Website**: [<https://www.aasi.or.id/>]
+*(atau gunakan `docker-compose up -d --build` jika masih menggunakan Docker Compose versi lama)*
+
+### 4. Akses Aplikasi
+
+* **Base URL Web API:** `http://localhost:8787`
+* Anda bisa menggunakan **Postman**, **Insomnia**, atau perkakas pengujian API lainnya untuk mulai menembak endpoint yang tersedia.
+
+---
+
+## 📬 Kontak & Informasi Lebih Lanjut
+
+* **Maintainer:** [Ahmad Hertanto](mailto:antho.firuze@gmail.com)
+* **Organisasi:** [Asosiasi Asuransi Syariah Indonesia (AASI)](https://www.aasi.or.id/)
