@@ -4,6 +4,7 @@ namespace app\process;
 
 use Workerman\Crontab\Crontab;
 use support\Db;
+use Workerman\Worker;
 
 class Task
 {
@@ -45,16 +46,37 @@ class Task
     // Duration add 120 minutes (for safety timezone WITA+1/WIT+2)
     function _update_exam_status()
     {
-        Db::table('exam_results')
-            ->where('status', '=', '')
-            ->where('start_at', '<>', null)
-            ->where('finish_at', '=', null)
-            ->whereRaw('(start_at + INTERVAL (duration + 120) MINUTE) < NOW()')
-            ->update([
-                'status' => 'completed',
-                'finish_at' => date('Y-m-d H:i:s'),
-                'note' => 'update status [completed] by system',
-            ]);
+        try {
+            // Db::table('exam_results')
+            //     ->where('status', '=', '')
+            //     ->where('start_at', '<>', null)
+            //     ->where('finish_at', '=', null)
+            //     ->whereRaw('(start_at + INTERVAL (duration + 120) MINUTE) < NOW()')
+            //     ->update([
+            //         'status' => 'completed',
+            //         'finish_at' => date('Y-m-d H:i:s'),
+            //         'note' => 'update status [completed] by system',
+            //     ]);
+            Db::table('exam_results')
+                ->where(function ($query) {
+                    $query->where('status', '=', '')
+                        ->orWhereNull('status');
+                })
+                // ->where('start_at', '<>', null)
+                // ->where('finish_at', '=', null)
+                ->whereNotNull('start_at')
+                ->whereRaw("start_at > '1970-01-01 00:00:00'")
+                ->where('start_at', '>', '2025-08-01 00:00:00')
+                ->whereNull('finish_at')
+                ->whereRaw('(start_at + INTERVAL (duration + 120) MINUTE) < NOW()')
+                ->update([
+                    'status' => 'completed',
+                    'finish_at' => date('Y-m-d H:i:s'),
+                    'note' => 'update status [completed] by system',
+                ]);
+        } catch (\Throwable $e) {
+            Worker::log('CRON _update_exam_status ERROR: ' . $e->getMessage());
+        }
     }
 
     private function update_broadcast_state()
