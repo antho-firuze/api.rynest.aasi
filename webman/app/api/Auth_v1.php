@@ -32,7 +32,7 @@ class Auth_v1
         <p>
             Salam,
             <br>
-            <b>Asosiasi Asuransi Syariah Indonesia (AASI)</b>
+            <b>Tim Asosiasi Asuransi Syariah Indonesia (AASI)</b>
         </p>
         <br><br>
         ";
@@ -45,7 +45,7 @@ class Auth_v1
         <p>
             Salam,
             <br>
-            <b>Asosiasi Asuransi Syariah Indonesia (AASI)</b>
+            <b>Tim Asosiasi Asuransi Syariah Indonesia (AASI)</b>
         </p>
         <br><br>
         ";
@@ -61,21 +61,18 @@ class Auth_v1
         <p>
             Salam,
             <br>
-            <b>Asosiasi Asuransi Syariah Indonesia (AASI)</b>
+            <b>Tim Asosiasi Asuransi Syariah Indonesia (AASI)</b>
         </p>
         <br><br>
         ";
     public $content_unregister_notif = "
         <p>Assalamu'alaikum, </p>
-        <p>Ini adalah email notifikasi yang menyatakan bahwa akun anda di Aplikasi Asosiasi Asuransi Syariah Indonesia (AASI) telah sengaja di TUTUP.</p>
-        <p>Dan akan kami pastikan data-data anda akan sepenuhnya di hapus dari sistem kami.</p>
-        <p>Terima kasih yang mendalam dari kami, Tim AASI dan sampai berjumpa kembali.</p>
-        <p>Note:</p>
-        <p>Jika Anda ingin meng-aktifkan kembali akun anda, silahkan hubungi Customer Service kami.</p>
+        <p>Ini adalah email konfirmasi bahwa akun anda pada Aplikasi AASI Agent Test telah berhasil dihapus sesuai permintaan Anda.</p>
+        <p>Apabila Anda ingin mengaktifkan akun kembali, silahkan hubungi Customer Service kami di +62-8891-2547-88.</p>
         <p>
             Salam,
             <br>
-            <b>Asosiasi Asuransi Syariah Indonesia (AASI)</b>
+            <b>Tim Asosiasi Asuransi Syariah Indonesia (AASI)</b>
         </p>
         <br><br>
         ";
@@ -90,7 +87,7 @@ class Auth_v1
         <p>
             Salam,
             <br>
-            <b>Asosiasi Asuransi Syariah Indonesia (AASI)</b>
+            <b>Tim Asosiasi Asuransi Syariah Indonesia (AASI)</b>
         </p>
         <br><br>
         ";
