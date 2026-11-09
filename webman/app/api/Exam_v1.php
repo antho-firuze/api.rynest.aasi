@@ -10,6 +10,7 @@ use Respect\Validation\Exceptions\NestedValidationException;
 use stdClass;
 use support\Db;
 use support\MyFunc;
+use app\api\Notification_v1;
 use support\Redis;
 use Webman\RedisQueue\Redis as RedisQueue;
 
@@ -32,7 +33,21 @@ class Exam_v1
 
     public function index(Request $request)
     {
-        return json(['message' => "Rynest => Admin API v1"]);
+        // $user_id = JwtToken::getCurrentId();
+        // $device_id = empty($device_id = JwtToken::getExtendVal('device_id')) ? 'xxxx' : $device_id;
+        $data = [];
+        $data['user_id'] = 400;
+        $data['device_id'] = "emu64a:UE1A.230829.036.A1";        // for disruption: device_id came from the last/old one 
+        $data['body'] = "Ada yang menggunakan Akun Anda untuk melakukan Ujian di perangkat lain.\n\n";
+        $data['body'] .= "Jenis Perangkat :\n";
+        $data['body'] .= "- Samsung Galaxy S23\n\n";
+        $data['body'] .= "Note :\n";
+        $data['body'] .= "- Untuk keamanan, silahkan Anda ganti password terlebih dahulu\n";
+        $data['body'] .= "- Lalu masuk kembali ke Menu Ujian\n";
+        MyFunc::create_notif_exam_disruption((object) $data);
+        return jsonr(['message' => "Rynest => Admin API v1x"]);
+
+
     }
 
     public function schedule(Request $request)
@@ -46,22 +61,22 @@ class Exam_v1
         } catch (NestedValidationException $e) {
             $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
-            return jsonr(['message' => $errMessage]);
+            return jsonr(['message' => $errMessage], 400);
         }
         $user_id = JwtToken::getCurrentId();
 
         // REDIS CHECK STAGE
         // ===================
-        try {
-            $redisKey = "exam-schedule-user_id-{$user_id}";
-            $redisVal = Redis::get($redisKey);
-            if ($redisVal != null) {
-                $result = json_decode($redisVal);
-                return json($result);
-            }
-        } catch (\Throwable $th) {
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
-        }
+        // try {
+        //     $redisKey = "exam-schedule-user_id-{$user_id}";
+        //     $redisVal = Redis::get($redisKey);
+        //     if ($redisVal != null) {
+        //         $result = json_decode($redisVal);
+        //         return jsonr($result);
+        //     }
+        // } catch (\Throwable $th) {
+        //     return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
+        // }
 
         // MIDDLE STAGE (Main Process)
         // ===========================
@@ -94,7 +109,7 @@ class Exam_v1
                 ->where('id_member', $member->id ?? null)
                 ->first();
 
-            // return json(date_create($schedule->open_registration));
+            // return jsonr(date_create($schedule->open_registration));
 
             // Anticipate backward compatibility
             if ($schedule->open_registration != null && $schedule->close_registration != null) {
@@ -135,13 +150,13 @@ class Exam_v1
             $result->photos = $photos;
 
             // Save to Redis
-            Redis::set($redisKey, json_encode($result));
-            Redis::expire($redisKey, 10);
+            // Redis::set($redisKey, json_encode($result));
+            // Redis::expire($redisKey, 10);
 
-            return json($result);
+            return jsonr($result);
         } catch (\Throwable $th) {
             Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 
@@ -195,33 +210,34 @@ class Exam_v1
         $data = (object) $request->post();
         try {
             $inputValidator = v::attribute('schedule_request_id', v::intType()->notEmpty())
-                ->attribute('device_id', v::stringType()->notEmpty());
+                ->attribute('device_id', v::nullable(v::stringType()->notEmpty()), false);
             $inputValidator->assert($data);
         } catch (NestedValidationException $e) {
             $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
-            return jsonr(['message' => $errMessage]);
+            return jsonr(['message' => $errMessage], 400);
         }
         $id_member = JwtToken::getExtendVal('id_member');
+        $device_id = empty($device_id = JwtToken::getExtendVal('device_id')) ? $data->device_id : $device_id;
 
         // SESSION CHECK STAGE
         // ===================
-        if (self::_check_session_same_device($data->schedule_request_id, $id_member, $data->device_id) == false) {
+        if (self::_check_session_same_device($data->schedule_request_id, $id_member, $device_id) == false) {
             return jsonr(['message' => 'Perangkat lain telah login menggunakan akun Anda'], 409);
         }
 
         // REDIS CHECK STAGE
         // ===================
-        try {
-            $redisKey = "exam-result-id_member-{$id_member}";
-            $redisVal = Redis::get($redisKey);
-            if ($redisVal != null) {
-                $result = json_decode($redisVal);
-                return json($result);
-            }
-        } catch (\Throwable $th) {
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
-        }
+        // try {
+        //     $redisKey = "exam-result-id_member-{$id_member}";
+        //     $redisVal = Redis::get($redisKey);
+        //     if ($redisVal != null) {
+        //         $result = json_decode($redisVal);
+        //         return jsonr($result);
+        //     }
+        // } catch (\Throwable $th) {
+        //     return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
+        // }
 
         // MIDDLE STAGE (Main Process)
         // ===========================
@@ -351,7 +367,7 @@ class Exam_v1
             // Db::commit();
         } catch (\Throwable $th) {
             // Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
 
         Db::beginTransaction();
@@ -364,7 +380,7 @@ class Exam_v1
                 ]);
 
             Db::commit();
-            
+
             // LAST STAGE (Output Process)
             // ===========================
             // Clearing the output
@@ -388,12 +404,12 @@ class Exam_v1
             $result->session = $exam_session;
 
             // Save to Redis
-            Redis::set($redisKey, json_encode($result));
-            Redis::expire($redisKey, 10);
-            return json($result);
+            // Redis::set($redisKey, json_encode($result));
+            // Redis::expire($redisKey, 10);
+            return jsonr($result);
         } catch (\Throwable $th) {
             Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 
@@ -428,12 +444,12 @@ class Exam_v1
         try {
             $inputValidator = v::attribute('schedule_request_id', v::intType()->notEmpty())
                 ->attribute('category_id', v::intType()->notEmpty())
-                ->attribute('device_id', v::stringType()->notEmpty());
+                ->attribute('device_id', v::nullable(v::stringType()->notEmpty()), false);
             $inputValidator->assert($data);
         } catch (NestedValidationException $e) {
             $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
-            return jsonr(['message' => $errMessage]);
+            return jsonr(['message' => $errMessage], 400);
         }
         $user_id = JwtToken::getCurrentId();
         $id_member = JwtToken::getExtendVal('id_member');
@@ -484,10 +500,10 @@ class Exam_v1
             // unset($exam_result->questions);
 
             $result = $exam_result;
-            return json($result);
+            return jsonr($result);
         } catch (\Throwable $th) {
             // Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 
@@ -500,15 +516,25 @@ class Exam_v1
             $inputValidator = v::attribute('schedule_request_id', v::intType()->notEmpty())
                 ->attribute('category_id', v::intType()->notEmpty())
                 ->attribute('start_at', v::dateTime('Y-m-d H:i:s')->notEmpty())
-                ->attribute('device_id', v::stringType()->notEmpty());
+                ->attribute('device_id', v::nullable(v::stringType()->notEmpty()), false)
+                ->attribute('device_name', v::stringType()->notEmpty())
+                ->attribute('ip_address', v::stringType()->notEmpty())
+                ->attribute('location', v::stringType()->notEmpty());
             $inputValidator->assert($data);
         } catch (NestedValidationException $e) {
             $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
-            return jsonr(['message' => $errMessage]);
+            return jsonr(['message' => $errMessage], 400);
         }
         $user_id = JwtToken::getCurrentId();
         $id_member = JwtToken::getExtendVal('id_member');
+        $device_id = empty($device_id = JwtToken::getExtendVal('device_id')) ? $data->device_id : $device_id;
+
+        // SESSION CHECK STAGE
+        // ===================
+        if (self::_check_session_same_device($data->schedule_request_id, $id_member, $device_id) == false) {
+            self::_send_notif_exam_disruption($data->schedule_request_id, $id_member, $device_id, $user_id);
+        }
 
         // MIDDLE STAGE (Main Process)
         // ===========================
@@ -561,7 +587,7 @@ class Exam_v1
                     'start_at'            => $data->start_at ?? date('Y-m-d H:i:s'),
                     'finish_at'           => null,
                     'restart'             => 0,
-                    'device'              => $data->device_id ?? '',
+                    'device'              => $device_id ?? '',
                     'ip_address'          => $data->ip_address ?? '',
                     'location'            => $data->location ?? '',
                 ];
@@ -585,7 +611,7 @@ class Exam_v1
                         'schedule_request_id' => $data->schedule_request_id,
                         'id_member'     => $id_member,
                         'restart'       => 0,
-                        'device_id'     => $data->device_id ?? '',
+                        'device_id'     => $device_id ?? '',
                         'device_name'   => $data->device_name ?? '',
                         'ip_address'    => $data->ip_address ?? '',
                         'location'      => $data->location ?? '',
@@ -593,7 +619,7 @@ class Exam_v1
                     ]);
 
                 // START EXAM SESSION
-                self::_start_session($data->schedule_request_id, $id_member, $data->device_id);
+                self::_start_session($data->schedule_request_id, $id_member, $device_id);
             } else {
                 $exam_result->check_score = $exam_result->cek_score ?? 0;
                 $exam_result->duration = $exam_result->duration ?? $category->duration;
@@ -603,7 +629,7 @@ class Exam_v1
                     self::_finish_session($data->schedule_request_id, $id_member);
                 } else {
                     // START EXAM SESSION
-                    self::_start_session($data->schedule_request_id, $id_member, $data->device_id);
+                    self::_start_session($data->schedule_request_id, $id_member, $device_id);
                 }
 
                 // EXAM SESSION
@@ -620,7 +646,7 @@ class Exam_v1
                         'schedule_request_id' => $data->schedule_request_id,
                         'id_member'     => $id_member,
                         'restart'       => $restart,
-                        'device_id'     => $data->device_id ?? '',
+                        'device_id'     => $device_id,
                         'device_name'   => $data->device_name ?? '',
                         'ip_address'    => $data->ip_address ?? '',
                         'location'      => $data->location ?? '',
@@ -628,12 +654,12 @@ class Exam_v1
                     ]);
 
                 // SECURITY CHECK: If difference Device is detected
-                if ($exam_result->device != $data->device_id) {
+                if ($exam_result->device != $device_id) {
                     // TODO: Send notidification to creator/initiator
                     $channel_name = "private-user-{$user_id}";
                     $event = 'intrusion';
                     $payload['code'] = 409;
-                    $payload['device_id'] = $data->device_id;
+                    $payload['device_id'] = $device_id;
                     $payload['title'] = 'Deteksi Gangguan';
                     $payload['message'] = 'Perangkat lain telah login menggunakan akun Anda !';
                     MyFunc::send_notif($channel_name, $event, $payload);
@@ -662,10 +688,10 @@ class Exam_v1
             unset($exam_result->passed_grade);
 
             $result = $exam_result;
-            return json($result);
+            return jsonr($result);
         } catch (\Throwable $th) {
             Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 
@@ -678,19 +704,20 @@ class Exam_v1
             $inputValidator = v::attribute('schedule_request_id', v::intType()->notEmpty())
                 ->attribute('question_id', v::stringType()->notEmpty())
                 ->attribute('answered_key', v::stringType()->notEmpty())
-                ->attribute('device_id', v::stringType()->notEmpty());
+                ->attribute('device_id', v::nullable(v::stringType()->notEmpty()), false);
             $inputValidator->assert($data);
         } catch (NestedValidationException $e) {
             $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
-            return jsonr(['message' => $errMessage]);
+            return jsonr(['message' => $errMessage], 400);
         }
         $user_id = JwtToken::getCurrentId();
         $id_member = JwtToken::getExtendVal('id_member');
+        $device_id = empty($device_id = JwtToken::getExtendVal('device_id')) ? $data->device_id : $device_id;
 
         // SESSION CHECK STAGE
         // ===================
-        if (self::_check_session_same_device($data->schedule_request_id, $id_member, $data->device_id) == false) {
+        if (self::_check_session_same_device($data->schedule_request_id, $id_member, $device_id) == false) {
             return jsonr(['message' => 'Perangkat lain telah login menggunakan akun Anda'], 409);
         }
 
@@ -733,10 +760,10 @@ class Exam_v1
             // LAST STAGE (Output Process)
             // ===========================
             $result = ['message' => 'done'];
-            return json($result);
+            return jsonr($result);
         } catch (\Throwable $th) {
             Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 
@@ -747,18 +774,19 @@ class Exam_v1
         $data = (object) $request->post();
         try {
             $inputValidator = v::attribute('schedule_request_id', v::intType()->notEmpty())
-                ->attribute('device_id', v::stringType()->notEmpty());
+                ->attribute('device_id', v::nullable(v::stringType()->notEmpty()), false);
             $inputValidator->assert($data);
         } catch (NestedValidationException $e) {
             $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
-            return jsonr(['message' => $errMessage]);
+            return jsonr(['message' => $errMessage], 400);
         }
         $id_member = JwtToken::getExtendVal('id_member');
+        $device_id = empty($device_id = JwtToken::getExtendVal('device_id')) ? $data->device_id : $device_id;
 
         // SESSION CHECK STAGE
         // ===================
-        if (self::_check_session_same_device($data->schedule_request_id, $id_member, $data->device_id) == false) {
+        if (self::_check_session_same_device($data->schedule_request_id, $id_member, $device_id) == false) {
             return jsonr(['message' => 'Perangkat lain telah login menggunakan akun Anda'], 409);
         }
 
@@ -809,7 +837,7 @@ class Exam_v1
             // Db::commit();
         } catch (\Throwable $th) {
             // Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
 
         Db::beginTransaction();
@@ -837,10 +865,10 @@ class Exam_v1
             unset($exam_result->cek_score);
 
             $result = $exam_result;
-            return json($result);
+            return jsonr($result);
         } catch (\Throwable $th) {
             Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 
@@ -852,19 +880,20 @@ class Exam_v1
         try {
             $inputValidator = v::attribute('schedule_request_id', v::intType()->notEmpty())
                 ->attribute('finish_at', v::dateTime('Y-m-d H:i:s')->notEmpty())
-                ->attribute('device_id', v::stringType()->notEmpty());
+                ->attribute('device_id', v::nullable(v::stringType()->notEmpty()), false);
             $inputValidator->assert($data);
         } catch (NestedValidationException $e) {
             $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
-            return jsonr(['message' => $errMessage]);
+            return jsonr(['message' => $errMessage], 400);
         }
         $user_id = JwtToken::getCurrentId();
         $id_member = JwtToken::getExtendVal('id_member');
+        $device_id = empty($device_id = JwtToken::getExtendVal('device_id')) ? $data->device_id : $device_id;
 
         // SESSION CHECK STAGE
         // ===================
-        if (self::_check_session_same_device($data->schedule_request_id, $id_member, $data->device_id) == false) {
+        if (self::_check_session_same_device($data->schedule_request_id, $id_member, $device_id) == false) {
             return jsonr(['message' => 'Perangkat lain telah login menggunakan akun Anda'], 409);
         }
 
@@ -892,7 +921,7 @@ class Exam_v1
             // Db::commit();
         } catch (\Throwable $th) {
             // Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
 
         Db::beginTransaction();
@@ -909,10 +938,10 @@ class Exam_v1
             // LAST STAGE (Output Process)
             // ===========================
             $result = ['message' => 'done'];
-            return json($result);
+            return jsonr($result);
         } catch (\Throwable $th) {
             Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 
@@ -925,19 +954,20 @@ class Exam_v1
             $inputValidator = v::attribute('schedule_request_id', v::intType()->notEmpty())
                 ->attribute('question_id', v::intType()->notEmpty())
                 ->attribute('shuffle', v::stringType()->notEmpty())
-                ->attribute('device_id', v::stringType()->notEmpty());
+                ->attribute('device_id', v::nullable(v::stringType()->notEmpty()), false);
             $inputValidator->assert($data);
         } catch (NestedValidationException $e) {
             $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
-            return jsonr(['message' => $errMessage]);
+            return jsonr(['message' => $errMessage], 400);
         }
         $user_id = JwtToken::getCurrentId();
         $id_member = JwtToken::getExtendVal('id_member');
+        $device_id = empty($device_id = JwtToken::getExtendVal('device_id')) ? $data->device_id : $device_id;
 
         // SESSION CHECK STAGE
         // ===================
-        if (self::_check_session_same_device($data->schedule_request_id, $id_member, $data->device_id) == false) {
+        if (self::_check_session_same_device($data->schedule_request_id, $id_member, $device_id) == false) {
             return jsonr(['message' => 'Perangkat lain telah login menggunakan akun Anda'], 409);
         }
 
@@ -946,19 +976,19 @@ class Exam_v1
         Db::beginTransaction();
         try {
             // Get from Redis
-            $redisKey = "exam-question-{$data->question_id}";
-            $question = Redis::get($redisKey);
-            if ($question == null) {
-                $question = Db::table('questions')
-                    ->selectRaw('id, question, answer_option_a, answer_option_b, answer_option_c, answer_option_d, answer_key')
-                    ->where('id', $data->question_id ?? null)
-                    ->first();
+            // $redisKey = "exam-question-{$data->question_id}";
+            // $question = Redis::get($redisKey);
+            // if ($question == null) {
+            $question = Db::table('questions')
+                ->selectRaw('id, question, answer_option_a, answer_option_b, answer_option_c, answer_option_d, answer_key')
+                ->where('id', $data->question_id ?? null)
+                ->first();
 
-                // Save to Redis
-                Redis::set($redisKey, json_encode($question));
-            } else {
-                $question = json_decode($question);
-            }
+            // Save to Redis
+            //     Redis::set($redisKey, json_encode($question));
+            // } else {
+            //     $question = json_decode($question);
+            // }
 
             // Shuffel the choices
             $question = self::_shuffled_options($question, $data->shuffle);
@@ -969,7 +999,13 @@ class Exam_v1
                 $dataQueue['schedule_request_id'] = $data->schedule_request_id;
                 $dataQueue['id_member'] = $id_member;
                 $dataQueue['question_id'] = $data->question_id;
-                RedisQueue::send('sync-question', $dataQueue);
+                // RedisQueue::send('sync-question', $dataQueue);
+                Db::table('exam_results')
+                    ->where('schedule_request_id', $data->schedule_request_id)
+                    ->where('id_member', $id_member)
+                    ->update([
+                        'sync_question' => $data->question_id,
+                    ]);
             }
 
             Db::commit();
@@ -984,10 +1020,10 @@ class Exam_v1
             // unset($question->answer_key);
 
             $result = $question;
-            return json($result);
+            return jsonr($result);
         } catch (\Throwable $th) {
             Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 
@@ -1033,7 +1069,7 @@ class Exam_v1
         } catch (NestedValidationException $e) {
             $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
-            return jsonr(['message' => $errMessage]);
+            return jsonr(['message' => $errMessage], 400);
         }
         $user_id = JwtToken::getCurrentId();
         $id_member = JwtToken::getExtendVal('id_member');
@@ -1088,10 +1124,10 @@ class Exam_v1
             // $result->question_ids = $exam_result->question_ids;
             // $result->questions = $shuffleQuestions;
             $result = $shuffleQuestions;
-            return json($result);
+            return jsonr($result);
         } catch (\Throwable $th) {
             Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 
@@ -1100,18 +1136,27 @@ class Exam_v1
         try {
             $sessionId = "exam-session-{$schedule_request_id}-{$id_member}";
             $sessionData = $device_id;
-            Redis::set($sessionId, $sessionData);
+            // Redis::set($sessionId, $sessionData);
+            Db::table('exam_session_apps')
+                ->updateOrInsert(
+                    ['id'    => $sessionId],
+                    ['data'  => $sessionData],
+                );
         } catch (\Throwable $th) {
             throw $th;
         }
-
     }
 
     private function _finish_session(int $schedule_request_id, int $id_member)
     {
         try {
             $sessionId = "exam-session-{$schedule_request_id}-{$id_member}";
-            Redis::del($sessionId);
+            // Redis::del($sessionId);
+            Db::table('exam_session_apps')
+                ->where([
+                    'id' => $sessionId,
+                ])
+                ->delete();
         } catch (\Throwable $th) {
             throw $th;
         }
@@ -1123,14 +1168,19 @@ class Exam_v1
             $sessionId = "exam-session-{$schedule_request_id}-{$id_member}";
             // $ret = null;
             // $ret = Redis::exists($sessionId);
-            $ret = Redis::get($sessionId);
+            // $ret = Redis::get($sessionId);
+            $ret = Db::table('exam_session_apps')
+                ->selectRaw('id, data')
+                ->where('id', $sessionId)
+                ->first();
+
             if ($ret == null) {
                 // Session does not exists
                 // it means: exam start has not been executed or exam has been finished
                 return true;
             } else {
                 // Session exists
-                return $ret == $device_id;
+                return $ret->data == $device_id;
             }
         } catch (\Throwable $th) {
             // Became true when Redis Error, because we think session does not exists.
@@ -1138,6 +1188,44 @@ class Exam_v1
             return true;
         }
     }
+
+    private function _send_notif_exam_disruption(int $schedule_request_id, int $id_member, string $device_id, int $user_id)
+    {
+        try {
+            $sessionId = "exam-session-{$schedule_request_id}-{$id_member}";
+            // $ret = null;
+            // $ret = Redis::exists($sessionId);
+            // $ret = Redis::get($sessionId);
+            $ret = Db::table('exam_session_apps')
+                ->selectRaw('id, data')
+                ->where('id', $sessionId)
+                ->first();
+
+            // if session exists
+            if ($ret != null) {
+                // check last device with current device
+                if ($ret->data != $device_id) {
+                    // if not the same then send kill notif to the last device
+                    $device_id = $ret->data;
+                    $data['user_id'] = $user_id;
+                    $data['device_id'] = $device_id;        // for disruption: device_id came from the last/old one 
+                    $data['body'] = "Ada yang menggunakan Akun Anda untuk melakukan Ujian di perangkat lain.\n\n";
+                    $data['body'] .= "Jenis Perangkat :\n";
+                    $data['body'] .= "- Samsung Galaxy S23\n\n";
+                    $data['body'] .= "Note :\n";
+                    $data['body'] .= "- Untuk keamanan, silahkan Anda ganti password terlebih dahulu\n";
+                    $data['body'] .= "- Lalu masuk kembali ke Menu Ujian\n";
+                    MyFunc::create_notif_exam_disruption((object) $data);
+                }
+            }
+        } catch (\Throwable $th) {
+            // Became true when Redis Error, because we think session does not exists.
+            //throw $th;
+            return true;
+        }
+    }
+
+
 
     public function photos(Request $request)
     {
@@ -1149,16 +1237,16 @@ class Exam_v1
 
         // REDIS CHECK STAGE
         // ===================
-        try {
-            $redisKey = "exam-photos-user_id-{$user_id}";
-            $redisVal = Redis::get($redisKey);
-            if ($redisVal != null) {
-                $result = json_decode($redisVal);
-                return json($result);
-            }
-        } catch (\Throwable $th) {
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
-        }
+        // try {
+        //     $redisKey = "exam-photos-user_id-{$user_id}";
+        //     $redisVal = Redis::get($redisKey);
+        //     if ($redisVal != null) {
+        //         $result = json_decode($redisVal);
+        //         return jsonr($result);
+        //     }
+        // } catch (\Throwable $th) {
+        //     return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
+        // }
 
         // MIDDLE STAGE (Main Process)
         // ===========================
@@ -1176,12 +1264,12 @@ class Exam_v1
             // ===========================
             $result = $photos;
             // Save to Redis
-            Redis::set($redisKey, json_encode($result));
-            Redis::expire($redisKey, 10);
-            return json($result);
+            // Redis::set($redisKey, json_encode($result));
+            // Redis::expire($redisKey, 10);
+            return jsonr($result);
         } catch (\Throwable $th) {
             Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 
@@ -1197,16 +1285,24 @@ class Exam_v1
         } catch (NestedValidationException $e) {
             $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
-            return jsonr(['message' => $errMessage]);
+            return jsonr(['message' => $errMessage], 400);
         }
         $id_member = JwtToken::getExtendVal('id_member');
 
-        $uploadType = ['exam_start', 'exam_finish', 'exam_rnd_1', 'exam_rnd_2'];
-        if (!in_array($data->type, $uploadType)) {
+        // $uploadType = ['exam_start', 'exam_finish', 'exam_rnd_1', 'exam_rnd_2'];
+        // if (!in_array($data->type, $uploadType)) {
+        //     $uploadTypeStr = implode('|', $uploadType);
+        //     return jsonr(['message' => "[type] not allowed, except: [{$uploadTypeStr}]"]);
+        // }
+        // $type = $data->type;
+
+        $uploadType = ['examstart', 'examfinish', 'examrnd1', 'examrnd2'];
+        if (!in_array(strtolower($data->type), $uploadType)) {
             $uploadTypeStr = implode('|', $uploadType);
-            return jsonr(['message' => "[type] not allowed, except: [{$uploadTypeStr}]"]);
+            return jsonr(['message' => "[type] not allowed, except: [{$uploadTypeStr}]"], 400);
         }
-        $type = $data->type;
+        $convertType = ['exam_start', 'exam_finish', 'exam_rnd_1', 'exam_rnd_2'];
+        $type = $convertType[array_search($data->type, $uploadType)];
 
         // MIDDLE STAGE (Main Process)
         // ===========================
@@ -1248,10 +1344,70 @@ class Exam_v1
             // LAST STAGE (Output Process)
             // ===========================
             $result = ['url' => $url];
-            return json($result);
+            return jsonr($result);
         } catch (\Throwable $th) {
             Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
+        }
+    }
+
+    public function get_presigned_s3_url(Request $request)
+    {
+        // FIRST STAGE (Parameters)
+        // ========================
+        $data = (object) $request->post();
+        try {
+            $inputValidator = v::attribute('schedule_request_id', v::notEmpty())
+                ->attribute('type', v::notEmpty());
+            $inputValidator->assert($data);
+        } catch (NestedValidationException $e) {
+            $errAttr = $e->getMessages($this->validatorDesc);
+            $errMessage = join(", ", (array) $errAttr['attribute']);
+            return jsonr(['message' => $errMessage], 400);
+        }
+        $id_member = JwtToken::getExtendVal('id_member');
+
+        $uploadType = ['examstart', 'examfinish', 'examrnd1', 'examrnd2'];
+        if (!in_array(strtolower($data->type), $uploadType)) {
+            $uploadTypeStr = implode('|', $uploadType);
+            return jsonr(['message' => "[type] not allowed, except: [{$uploadTypeStr}]"], 400);
+        }
+        $convertType = ['exam_start', 'exam_finish', 'exam_rnd_1', 'exam_rnd_2'];
+        $type = $convertType[array_search($data->type, $uploadType)];
+
+        // MIDDLE STAGE (Main Process)
+        // ===========================
+        Db::beginTransaction();
+        try {
+            $photo = Db::table('participant_photo')
+                ->where('schedule_request_id', $data->schedule_request_id)
+                ->where('id_member', $id_member)
+                ->where('type', $type)
+                ->first();
+
+            if (!$photo) {
+                throw new Exception("Image not exists", 460);
+            }
+            if ($photo->image_url == null || $photo->image_url == '') {
+                throw new Exception("Image not exists", 460);
+            }
+
+            $file_name = basename($photo->image_url);
+            $folder = "images/examination/{$data->schedule_request_id}/";
+
+            Db::commit();
+
+            // return jsonr(['message' => 'success', 'data' => $folder . $file_name]);
+
+            // LAST STAGE (Output Process)
+            // ===========================
+            $config['file_name'] = $file_name;
+            $config['folder'] = $folder;
+            $url = MyFunc::view_s3_content($request, $config);
+            return jsonr($url);
+        } catch (\Throwable $th) {
+            Db::rollBack();
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 }
@@ -1262,5 +1418,5 @@ class Exam_v1
 //     Db::commit();
 // } catch (\Throwable $th) {
 //     Db::rollBack();
-//     return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+//     return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
 // }

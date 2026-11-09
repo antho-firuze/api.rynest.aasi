@@ -22,7 +22,7 @@ class VerifyAPIToken implements MiddlewareInterface
                 JwtToken::verify();
                 return $handler($request);
             } catch (\Throwable $th) {
-                return jsonr(['message' => $th->getMessage()]);
+                return jsonr(['message' => $th->getMessage()], $th->getCode() == 0 ? 401 : $th->getCode());
             }
         }
 

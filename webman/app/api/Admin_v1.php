@@ -28,7 +28,9 @@ class Admin_v1
 
     public function index(Request $request)
     {
-        return json(['message' => "Rynest => Admin API v1"]);
+        $data = [];
+        $data = ["date" => date('Y-m-d H:i:s')];
+        return jsonr(['message' => "Rynest => Admin API v1", ...$data]);
     }
 
     public function user(Request $request)
@@ -89,9 +91,9 @@ class Admin_v1
             $result->locations = $location;
             $result->exam_results = $exam_result;
             $result->exam_session = $exam_session;
-            return json($result);
+            return jsonr($result);
         } catch (\Throwable $th) {
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 
@@ -153,9 +155,9 @@ class Admin_v1
             $result->locations = $location;
             $result->exam_results = $exam_result;
             $result->exam_session = $exam_session;
-            return json($result);
+            return jsonr($result);
         } catch (\Throwable $th) {
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 
@@ -184,7 +186,7 @@ class Admin_v1
             Db::rollBack();
         }
 
-        return json(['rows_affected' => $count, 'save_changes' => $data->commit]);
+        return jsonr(['rows_affected' => $count, 'save_changes' => $data->commit]);
     }
 
     public function clear_exam(Request $request)
@@ -214,7 +216,7 @@ class Admin_v1
             Db::rollBack();
         }
 
-        return json([
+        return jsonr([
             'rows_affected(participant_photo)' => $count,
             'rows_affected(exam_results)' => $count2,
             'rows_affected(exam_logs)' => $count3,
@@ -234,7 +236,7 @@ class Admin_v1
         } catch (NestedValidationException $e) {
             $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
-            return jsonr(['message' => $errMessage]);
+            return jsonr(['message' => $errMessage], 400);
         }
         $id_member = $data->id_member;
 
@@ -249,7 +251,7 @@ class Admin_v1
                 ->first();
 
             if ($exam_result == null) {
-                return json(null);
+                return jsonr(null);
             }
 
             // $exam_session = Db::table('exam_session')
@@ -366,10 +368,10 @@ class Admin_v1
             // Db::commit();
         } catch (\Throwable $th) {
             // Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
 
-        return json($exam_result);
+        return jsonr($exam_result);
     }
 
     public function task(Request $request)
@@ -409,9 +411,9 @@ class Admin_v1
             $result = (object) [];
             $result->exam_count = count($exam_results);
             $result->exam_results = $exam_results;
-            return json($result);
+            return jsonr($result);
         } catch (\Throwable $th) {
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
         
     }

@@ -51,6 +51,7 @@ Route::group('/api/v1/member', function () {
     Route::post('/profile', [app\api\Member_v1::class, 'profile']);
     Route::post('/certificate', [app\api\Member_v1::class, 'certificate']);
     Route::post('/upload_photo', [app\api\Member_v1::class, 'upload_photo']);
+    Route::post('/get_presigned_s3_url', [app\api\Member_v1::class, 'get_presigned_s3_url']);
 })->middleware([
     app\middleware\VerifyAPIToken::class,
 ]);
@@ -68,6 +69,22 @@ Route::group('/api/v1/exam', function () {
     Route::post('/questions', [app\api\Exam_v1::class, 'questions']);
     Route::post('/photos', [app\api\Exam_v1::class, 'photos']);
     Route::post('/upload_photo', [app\api\Exam_v1::class, 'upload_photo']);
+    Route::post('/get_presigned_s3_url', [app\api\Exam_v1::class, 'get_presigned_s3_url']);
+})->middleware([
+    app\middleware\VerifyAPIToken::class,
+]);
+
+Route::group('/api/v1/notification', function () {
+    Route::post('/', [app\api\Notification_v1::class, 'index']);
+    Route::post('/device_sync', [app\api\Notification_v1::class, 'device_sync']);
+    Route::post('/notifications_sync', [app\api\Notification_v1::class, 'notifications_sync']);
+    Route::post('/notification_status_sync', [app\api\Notification_v1::class, 'notification_status_sync']);
+    Route::post('/create', [app\api\Notification_v1::class, 'create']);
+    Route::post('/update', [app\api\Notification_v1::class, 'update']);
+    Route::post('/delete', [app\api\Notification_v1::class, 'delete']);
+    Route::post('/user_read', [app\api\Notification_v1::class, 'user_read']);
+    Route::post('/user_archive', [app\api\Notification_v1::class, 'user_archive']);
+    Route::post('/user_delete', [app\api\Notification_v1::class, 'user_delete']);
 })->middleware([
     app\middleware\VerifyAPIToken::class,
 ]);

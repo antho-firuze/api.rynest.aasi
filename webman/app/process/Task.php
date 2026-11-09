@@ -5,6 +5,7 @@ namespace app\process;
 use Workerman\Crontab\Crontab;
 use support\Db;
 use Workerman\Worker;
+use support\MyFunc;
 
 class Task
 {
@@ -15,15 +16,17 @@ class Task
             // echo date('Y-m-d H:i:s') . "\n";
         });
 
-        // Run every 15 seconds
-        new Crontab('*/15 * * * * *', function () {
-            // $this->update_broadcast_state();
+        // Run every 30 seconds
+        new Crontab('*/30 * * * * *', function () {
+            // $this->check_publish_notification();
         });
 
         // // Run every minute
         new Crontab('0 */1 * * * *', function () {
             // echo date('Y-m-d H:i:s') . "\n";
             self::_update_exam_status();
+            self::check_publish_notification();
+            self::clean_exam_session_apps();
         });
 
         // Run every 5 minutes
@@ -31,8 +34,8 @@ class Task
             // $this->clean_broadcast_garbage();
         });
 
-        // // Run on the first second of every minute
-        new Crontab('1 * * * * *', function () {
+        // Run every hour
+        new Crontab('0 * * * * *', function () {
             // echo date('Y-m-d H:i:s') . "\n";
         });
 
@@ -79,6 +82,69 @@ class Task
         }
     }
 
+    private function _send_push_notification(String $target_type, String $target_value = '')
+    {
+        switch (strtoupper($target_type)) {
+            case 'GUEST':
+                $channel_name = "guest-channel";
+                $event = "notification";
+                $data = ["type" => "notification"];
+                $socket_id = '';
+                MyFunc::send_notif($channel_name, $event, $data, $socket_id);
+                break;
+            case 'USER':
+                $channel_name = "presence-channel";
+                $event = "notification";
+                $data = ["type" => "notification"];
+                $socket_id = '';
+                MyFunc::send_notif($channel_name, $event, $data, $socket_id);
+                break;
+            case 'SPECIFIC_USER':
+            case 'SPECIFIC_GUEST':
+                $channel_name = $target_value;
+                $event = "notification";
+                $data = ["type" => "notification"];
+                $socket_id = '';
+                MyFunc::send_notif($channel_name, $event, $data, $socket_id);
+                break;
+            default:
+                self::_send_push_notification('GUEST');
+                self::_send_push_notification('USER');
+                break;
+        }
+    }
+
+    private function check_publish_notification()
+    {
+        // echo date('Y-m-d H:i:s') . " => Checking Publish Notification every 30 seconds\n";
+        Db::beginTransaction();
+        try {
+            $notifications = Db::table('notifications')
+                ->where('is_active', false)
+                ->where('publish_at', '<=', date('Y-m-d H:i:s'))
+                ->get();
+            
+            echo date('Y-m-d H:i:s') . " => Found " . count($notifications) . " notifications to publish\n";
+
+            foreach ($notifications as $notif) {
+                // update is_active to true
+                Db::table('notifications')
+                    ->where('id', $notif->id)
+                    ->update(['is_active' => true]);
+
+                // send push notification
+                $target_value = $notif->target_type == 'SPECIFIC_GUEST' ? "D-{$notif->device_id}" : '';
+                $target_value = $notif->target_type == 'SPECIFIC_USER' ? "U-{$notif->user_id}" : $target_value;
+                $target_value = $notif->target_type == 'SPECIFIC_GROUP' ? "G-{$notif->group_id}" : $target_value;
+                self::_send_push_notification($notif->target_type, $target_value);
+            }
+
+            Db::commit();
+        } catch (\Throwable $th) {
+            Db::rollBack();
+        }
+    }
+
     private function update_broadcast_state()
     {
         // echo date('Y-m-d H:i:s') . " => Cleaning Broadcast every 15 second\n";
@@ -101,5 +167,13 @@ class Task
         $obsolete = date('Y-m-d H:i:s', strtotime('-1 day'));
         Db::table('log_location')->where('time', '<', $obsolete)->delete();
         Db::table('live_location')->where('heartbeat', '<', $obsolete)->delete();
+    }
+
+    private function clean_exam_session_apps()
+    {
+        // echo date('Y-m-d H:i:s') . " => Cleaning Exam Session Apps every 1 hour\n";
+        Db::table('exam_session_apps')
+            ->whereRaw('(created_at + INTERVAL 100 MINUTE) < NOW()')
+            ->delete();
     }
 }

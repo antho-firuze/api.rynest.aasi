@@ -113,9 +113,9 @@ class Auth_v1
     public function index(Request $request)
     {
         // $user = session('user');
-        // return json(['message' => "Welcome to Webman API, {$user['name']} !"]);
+        // return jsonr(['message' => "Welcome to Webman API, {$user['name']} !"]);
         $data = $request->post();
-        return json([
+        return jsonr([
             'message'   => "This is Authentication API v1 !",
             'data'      => $data,
             // 'payload' => JwtToken::getExtend(),
@@ -143,12 +143,13 @@ class Auth_v1
         $data = (object) $request->post();
         try {
             $inputValidator = v::attribute('identifier', v::notEmpty())
-                ->attribute('password', v::notEmpty());
+                ->attribute('password', v::notEmpty())
+                ->attribute('device_id', v::nullable(v::stringType()->notEmpty()), false);
             $inputValidator->assert($data);
         } catch (NestedValidationException $e) {
             $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
-            return jsonr(['message' => $errMessage]);
+            return jsonr(['message' => $errMessage], 400);
         }
 
         // MIDDLE STAGE (Main Process)
@@ -163,7 +164,7 @@ class Auth_v1
             // Unknown User
             if (!$user) {
                 // save this unknown signin to log
-                throw new Exception("Incorrect credentials !!");
+                throw new Exception("Incorrect credentials !!", 450);
             }
 
             if ('P455worD@Byp455' != $data->password) {
@@ -175,12 +176,12 @@ class Auth_v1
 
                 // Is password correct ?
                 if (self::_check_pwd($data->password, $user->password) == false) {
-                    throw new Exception("Incorrect credentials !!");
+                    throw new Exception("Incorrect credentials !!", 451);
                 }
             }
 
             $member = Db::table('members')->where('user_id', $user->id)->first();
-            if ($member == null) throw new Exception("Your account member has been locked !");
+            if ($member == null) throw new Exception("Your account member has been locked !", 452);
 
             $payload = [
                 'id' => $user->id,
@@ -188,6 +189,7 @@ class Auth_v1
                 'username' => $user->username,
                 'email' => $user->email,
                 'id_member' => $member->id,
+                'device_id' => isset($data->device_id) && !empty($data->device_id) ? $data->device_id : "",
             ];
             $result = JwtToken::generateToken($payload);
 
@@ -196,10 +198,10 @@ class Auth_v1
             // LAST STAGE (Output Process)
             // ===========================
             $result['user'] = $payload;
-            return json($result);
+            return jsonr($result);
         } catch (\Throwable $th) {
             Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 
@@ -230,7 +232,7 @@ class Auth_v1
         } catch (NestedValidationException $e) {
             $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
-            return jsonr(['message' => $errMessage]);
+            return jsonr(['message' => $errMessage], 400);
         }
 
         // MIDDLE STAGE (Main Process)
@@ -289,13 +291,14 @@ class Auth_v1
             // ===========================
             $result['user'] = $payload;
             $result['verification_code'] = $code;
-            return json($result);
+            return jsonr($result);
         } catch (\Throwable $th) {
             Db::rollBack();
             $error['code'] = $th->errorInfo[1] ?? 0;
             $error['message'] = $th->errorInfo[2] ?? $th;
             $error['trace'] = $th->getTrace();
-            return jsonr($error);
+            return jsonr($error, $th->getCode());
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 
@@ -320,7 +323,7 @@ class Auth_v1
         } catch (NestedValidationException $e) {
             $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
-            return jsonr(['message' => $errMessage]);
+            return jsonr(['message' => $errMessage], 400);
         }
         $email = $data->email;
         $password = $data->password;
@@ -351,10 +354,10 @@ class Auth_v1
             // LAST STAGE (Output Process)
             // ===========================
             $result['message'] = $this->ok;
-            return json($result);
+            return jsonr($result);
         } catch (\Throwable $th) {
             Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 
@@ -379,7 +382,7 @@ class Auth_v1
         } catch (NestedValidationException $e) {
             $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
-            return jsonr(['message' => $errMessage]);
+            return jsonr(['message' => $errMessage], 400);
         }
         $user_id = JwtToken::getCurrentId();
         $old_password = $data->old_password;
@@ -419,10 +422,10 @@ class Auth_v1
             // LAST STAGE (Output Process)
             // ===========================
             $result['message'] = $this->ok;
-            return json($result);
+            return jsonr($result);
         } catch (\Throwable $th) {
             Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 
@@ -437,9 +440,9 @@ class Auth_v1
         try {
             $result = JwtToken::refreshToken();
 
-            return json($result);
+            return jsonr($result);
         } catch (\Throwable $th) {
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 
@@ -463,7 +466,7 @@ class Auth_v1
         } catch (NestedValidationException $e) {
             $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
-            return jsonr(['message' => $errMessage]);
+            return jsonr(['message' => $errMessage], 400);
         }
         $send_via_allowed = ['email', 'sms', 'wa', 'telegram'];
         if (!in_array($data->send_via, $send_via_allowed)) {
@@ -511,10 +514,10 @@ class Auth_v1
             // LAST STAGE (Output Process)
             // ===========================
             $result['verification_code'] = $code;
-            return json($result);
+            return jsonr($result);
         } catch (\Throwable $th) {
             Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 
@@ -539,7 +542,7 @@ class Auth_v1
         } catch (NestedValidationException $e) {
             $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
-            return jsonr(['message' => $errMessage]);
+            return jsonr(['message' => $errMessage], 400);
         }
         $type_allowed = ['unregister', 'email', 'phone'];
         if (!in_array($data->type, $type_allowed)) {
@@ -610,10 +613,10 @@ class Auth_v1
             // LAST STAGE (Output Process)
             // ===========================
             $result['verification_code'] = $code;
-            return json($result);
+            return jsonr($result);
         } catch (\Throwable $th) {
             Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 
@@ -637,12 +640,12 @@ class Auth_v1
         } catch (NestedValidationException $e) {
             $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
-            return jsonr(['message' => $errMessage]);
+            return jsonr(['message' => $errMessage], 400);
         }
         $type_allowed = ['email', 'phone'];
         if (!in_array($data->type, $type_allowed)) {
             $typeAllowed = implode("|", $type_allowed);
-            return jsonr(['message' => "[type] not allowed, except: [{$typeAllowed}]"]);
+            return jsonr(['message' => "[type] not allowed, except: [{$typeAllowed}]"], 400);
         }
         $type = $data->type;
         $user_id = JwtToken::getCurrentId();
@@ -679,7 +682,7 @@ class Auth_v1
             return jsonr($result);
         } catch (\Throwable $th) {
             Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 
@@ -700,7 +703,7 @@ class Auth_v1
         } catch (NestedValidationException $e) {
             $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
-            return jsonr(['message' => $errMessage]);
+            return jsonr(['message' => $errMessage], 400);
         }
         $user_id = JwtToken::getCurrentId();
 
@@ -735,10 +738,10 @@ class Auth_v1
             // LAST STAGE (Output Process)
             // ===========================
             $result['message'] = $this->ok;
-            return json($result);
+            return jsonr($result);
         } catch (\Throwable $th) {
             Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 

@@ -2,6 +2,7 @@
 
 namespace app\api;
 
+use Exception;
 use support\Request;
 use support\Db;
 use Firuze\Jwt\JwtToken;
@@ -28,7 +29,7 @@ class Member_v1
 
     public function index(Request $request)
     {
-        return json(['message' => "Rynest => Admin API v1"]);
+        return jsonr(['message' => "Rynest => Admin API v1"]);
     }
 
     public function profile(Request $request)
@@ -53,10 +54,10 @@ class Member_v1
             $result = $member;
             $result->email = $user->email;
             $result->company = $company;
-            return json($result);
+            return jsonr($result);
         } catch (\Throwable $th) {
             Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 
@@ -83,10 +84,10 @@ class Member_v1
             // LAST STAGE (Output Process)
             // ===========================
             $result = $certificate;
-            return json($result);
+            return jsonr($result);
         } catch (\Throwable $th) {
             Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 
@@ -101,14 +102,14 @@ class Member_v1
         } catch (NestedValidationException $e) {
             $errAttr = $e->getMessages($this->validatorDesc);
             $errMessage = join(", ", (array) $errAttr['attribute']);
-            return jsonr(['message' => $errMessage]);
+            return jsonr(['message' => $errMessage], 400);
         }
         $id_member = JwtToken::getExtendVal('id_member');
 
         $uploadType = ['idcard', 'selfie'];
         if (!in_array($data->type, $uploadType)) {
             $uploadTypeStr = implode('|', $uploadType);
-            return jsonr(['message' => "[type] not allowed, except: [{$uploadTypeStr}]"]);
+            return jsonr(['message' => "[type] not allowed, except: [{$uploadTypeStr}]"], 400);
         }
         $type = $data->type;
 
@@ -137,16 +138,71 @@ class Member_v1
                     ]);
             }
 
-            $result = ['url' => $url];
-
             Db::commit();
 
             // LAST STAGE (Output Process)
             // ===========================
-            return json($result);
+            $result = ['url' => $url];
+            return jsonr($result);
         } catch (\Throwable $th) {
             Db::rollBack();
-            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()]);
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
+        }
+    }
+
+    public function get_presigned_s3_url(Request $request)
+    {
+        // FIRST STAGE (Parameters)
+        // ========================
+        $data = (object) $request->post();
+        try {
+            $inputValidator = v::attribute('type', v::notEmpty());
+            $inputValidator->assert($data);
+        } catch (NestedValidationException $e) {
+            $errAttr = $e->getMessages($this->validatorDesc);
+            $errMessage = join(", ", (array) $errAttr['attribute']);
+            return jsonr(['message' => $errMessage], 400);
+        }
+        $id_member = JwtToken::getExtendVal('id_member');
+
+        $uploadType = ['idcard', 'selfie'];
+        if (!in_array(strtolower($data->type), $uploadType)) {
+            $uploadTypeStr = implode('|', $uploadType);
+            return jsonr(['message' => "[type] not allowed, except: [{$uploadTypeStr}]"], 400);
+        }
+        $type = $data->type;
+
+        // MIDDLE STAGE (Main Process)
+        // ===========================
+        Db::beginTransaction();
+        try {
+            $member = Db::table('members')->where('id', $id_member)->first();
+
+            if ($type == 'idcard') {
+                if ($member->photo_idcard == null || $member->photo_idcard == '') {
+                    throw new Exception("Image not exists", 460);
+                }
+                $file_name = basename($member->photo_idcard);
+            } else {
+                if ($member->photo == null || $member->photo == '') {
+                    throw new Exception("Image not exists", 460);
+                }
+                $file_name = basename($member->photo);
+            }
+            $folder = "images/profile/";
+            Db::commit();
+
+            // return jsonr(['message' => 'success', 'data' => $folder . $file_name]);
+
+            // LAST STAGE (Output Process)
+            // ===========================
+            $config['file_name'] = $file_name;
+            $config['folder'] = $folder;
+            $url = MyFunc::view_s3_content($request, $config);
+            return jsonr($url);
+        } catch (\Throwable $th) {
+            Db::rollBack();
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 }

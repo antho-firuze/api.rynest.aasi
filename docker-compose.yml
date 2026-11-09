@@ -18,7 +18,12 @@ services:
     depends_on:
       - nginx
       - redis
-
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        
   nginx:
     build:
       context: ./
@@ -31,11 +36,16 @@ services:
       - 443:443
     volumes:
       - ./webman:/webman
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   redis:
     image: redis:latest
     container_name: aasi-redis
-    restart: on-failure
+    restart: always
     tty: true
     ports:
       - 6379:6379
@@ -45,14 +55,47 @@ services:
     environment:
       - REDIS_REPLICATION_MODE=master
       - REDIS_HOST=127.0.0.1
+    # Added explicit maxmemory configuration limits directly to the runtime command
     command:
       [
         "redis-server",
         "--appendonly",
-        "yes",
-        "--replica-read-only",
         "no",
+        "--save",
+        "",
+        "--maxmemory",
+        "2gb",
+        "--maxmemory-policy",
+        "volatile-lru"
       ]
+    # Allow the container to manage deep system threading loops safely
+    privileged: true
+    # command:
+    #   [
+    #     "redis-server",
+    #     "--appendonly",
+    #     "yes",
+    #     "--replica-read-only",
+    #     "no",
+    #     "--rdbcompression",
+    #     "no",
+    #   ]
+    # Grant kernel tuning parameters to the container
+    sysctls:
+      - net.core.somaxconn=65535
+    # Prevent Docker from terminating Redis during intense background tasks
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+      memlock:
+        soft: -1
+        hard: -1
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   redisdata:

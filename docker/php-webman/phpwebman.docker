@@ -1,50 +1,86 @@
-FROM php:8.4-cli-alpine
+# 1. Base image
+FROM php:8.4.27-zts-alpine
 
+# Define the default timezone variable
 ENV TZ=Asia/Jakarta
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories \
-    && apk update --no-cache \
-    && apk add zlib-dev \
-    && apk add libpng-dev \
-    && apk add freetype-dev \
-    && apk add libjpeg-turbo-dev \
-    && docker-php-source extract \
-    && docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) pcntl pdo_mysql gd \
-    && docker-php-ext-enable opcache pcntl pdo_mysql gd \
-    && mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
-    && sed -i 's/post_max_size =.*/post_max_size = 50M/g' "$PHP_INI_DIR/php.ini" \
-    && sed -i 's/upload_max_filesize =.*/upload_max_filesize = 50M/g' "$PHP_INI_DIR/php.ini" \
-    && sed -i 's/;date.timezone =.*/date.timezone = PRC/g' "$PHP_INI_DIR/php.ini" \
-    && sed -i 's/short_open_tag =.*/short_open_tag = On/g' "$PHP_INI_DIR/php.ini" \
-    && sed -i 's/;cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/g' "$PHP_INI_DIR/php.ini" \
-    && sed -i 's/max_execution_time =.*/max_execution_time = 300/g' "$PHP_INI_DIR/php.ini" \
-    # && sed -i 's/disable_functions =.*/disable_functions = passthru,exec,system,chroot,chgrp,chown,shell_exec,proc_open,proc_get_status,popen,ini_alter,ini_restore,dl,openlog,syslog,readlink,symlink,popepassthru/g' "$PHP_INI_DIR/php.ini" \
-    # && php -r "copy('https://install.phpcomposer.com/installer', 'composer-setup.php');" \
-    # && php composer-setup.php \
-    # && php -r "unlink('composer-setup.php');" \
-    # && mv composer.phar /usr/local/bin/composer \
-    # && composer config -g repo.packagist composer https://mirrors.aliyun.com/composer/ \
-    && docker-php-source delete \
-    && rm -rf /var/cache/apk/*
+# Install tzdata, configure the runtime zone, and clean up
+RUN apk add --no-cache tzdata \
+    && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
+    && echo $TZ > /etc/timezone \
+    && apk del tzdata
+# RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-RUN apk add --no-cache $PHPIZE_DEPS openssl-dev
+# 3. Switch Alpine repositories to Aliyun mirror for faster downloads in China
+RUN set -ux; \
+    sed -i 's/dl-cdn.alpinelinux.org/://aliyun.com' /etc/apk/repositories; \
+    apk update --no-cache;
 
-RUN pecl install redis 
-RUN docker-php-ext-enable redis
+# 4. Install system dependencies (added 'apcu-dev' to build APCu extension)
+RUN apk add --no-cache \
+        zlib-dev \
+        libpng-dev \
+        freetype-dev \
+        libjpeg-turbo-dev \
+        openssl-dev \
+        $PHPIZE_DEPS;
 
+# 5. Extract PHP core source files
+RUN docker-php-source extract;
+
+# 6. Configure and install PHP extensions (including APCu)
+RUN docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg; \
+    docker-php-ext-install -j$(nproc) pcntl pdo_mysql gd; \
+    pecl install redis apcu; \
+    docker-php-ext-enable redis opcache pcntl pdo_mysql gd apcu;
+
+# 7. Initialize the production configuration file
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini";
+
+# 8. Tune php.ini runtime settings
+RUN sed -i 's/post_max_size =.*/post_max_size = 50M/g' "$PHP_INI_DIR/php.ini"; \
+    sed -i 's/upload_max_filesize =.*/upload_max_filesize = 50M/g' "$PHP_INI_DIR/php.ini"; \
+    sed -i 's/;date.timezone =.*/date.timezone = PRC/g' "$PHP_INI_DIR/php.ini"; \
+    sed -i 's/short_open_tag =.*/short_open_tag = On/g' "$PHP_INI_DIR/php.ini"; \
+    sed -i 's/;cgi.fix_pathinfo=.*/cgi.fix_pathinfo=0/g' "$PHP_INI_DIR/php.ini"; \
+    sed -i 's/max_execution_time =.*/max_execution_time = 300/g' "$PHP_INI_DIR/php.ini";
+
+# 9. Add Memory Limit & APCu configurations
+RUN sed -i 's/memory_limit =.*/memory_limit = 512M/g' "$PHP_INI_DIR/php.ini"; \
+    echo "apc.enabled=1" >> "$PHP_INI_DIR/php.ini"; \
+    echo "apc.enable_cli=1" >> "$PHP_INI_DIR/php.ini";
+
+# 10. Add High-Performance Production OPCache configurations
+RUN { \
+        echo 'opcache.enable=1'; \
+        echo 'opcache.enable_cli=1'; \
+        echo 'opcache.memory_consumption=256'; \
+        echo 'opcache.interned_strings_buffer=16'; \
+        echo 'opcache.max_accelerated_files=20000'; \
+        echo 'opcache.validate_timestamps=0'; \
+        echo 'opcache.revalidate_freq=0'; \
+        echo 'opcache.fast_shutdown=1'; \
+    } >> "$PHP_INI_DIR/php.ini";
+
+# 11. Cleanup build dependencies, source files, and caches to save space
+RUN apk del --no-cache $PHPIZE_DEPS; \
+    docker-php-source delete; \
+    rm -rf /var/cache/apk/* /tmp/*
+
+# 12. Install Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# SET THE WORKING DIRECTORY
+# 13. SET THE WORKING DIRECTORY
 WORKDIR /webman
+
+# 14. Copy webman folder to working dir 
 COPY ./webman .
 
+# 15. Running composer install
+RUN composer install --ignore-platform-reqs
+
 # OPENED PORT
-# ===========
 EXPOSE 8787 3131 3232 8888
 
-# NEXT STEP AFTER INSTALL MANUAL : Uncomment two lines below, when first time create phpwebman
-# ==============================
-RUN composer install --ignore-platform-reqs
+# Running once after installation finish
 CMD ["php", "start.php", "start"]

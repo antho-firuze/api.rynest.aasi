@@ -13,8 +13,21 @@ use support\Response;
  * @return Response
  */
 if (!function_exists('jsonr')) {
-    function jsonr($data, int $status = 500, int $options = JSON_UNESCAPED_UNICODE): Response
+    function jsonr(mixed $data, int $status = 200, int $options = JSON_UNESCAPED_UNICODE): Response
     {
+        // if (is_null($data)) {
+        //     $data["data"] = null;
+        // } else if (is_object($data)) {
+        //     $data = (array) $data;
+        // }
+        $env_config = getenv('ENV_CONFIG') == "" ? "PRODUCTION" : getenv('ENV_CONFIG');
+        if ($env_config == "PRODUCTION") {
+            if ($status != 200) {
+                unset($data["trace"]);
+            }
+        }
+        $status = $status == 0 ? 500 : $status;
+        // $data = array_merge(["code" => $status], $data);
         return new Response($status, ['Content-Type' => 'application/json'], json_encode($data, $options));
     }
 }
