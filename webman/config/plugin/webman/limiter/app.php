@@ -10,7 +10,7 @@ return [
             'connection' => 'default',
         ]
     ],
-    // 这些ip的请求不做频率限制
+    // There is no frequency limit for requests from these IPs
     'ip_whitelist' => [
         '127.0.0.1',
     ],

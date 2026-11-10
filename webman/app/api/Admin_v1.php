@@ -103,6 +103,7 @@ class Admin_v1
 
         try {
             $member = Db::table('members')
+                ->orWhereLike('id', $data->identifier)
                 ->orWhereLike('member_id', $data->identifier)
                 ->orWhereLike('identity_card', $data->identifier)
                 ->first();

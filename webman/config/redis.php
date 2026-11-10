@@ -20,7 +20,7 @@ return [
         'database' => 0,
         // Connection pool, supports only Swoole or Swow drivers.
         'pool' => [
-            'max_connections' => 15,
+            'max_connections' => 1000,
             'min_connections' => 1,
             'wait_timeout' => 3,
             'idle_timeout' => 60,

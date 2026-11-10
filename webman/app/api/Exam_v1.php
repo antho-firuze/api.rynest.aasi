@@ -35,19 +35,9 @@ class Exam_v1
     {
         // $user_id = JwtToken::getCurrentId();
         // $device_id = empty($device_id = JwtToken::getExtendVal('device_id')) ? 'xxxx' : $device_id;
-        $data = [];
-        $data['user_id'] = 400;
-        $data['device_id'] = "emu64a:UE1A.230829.036.A1";        // for disruption: device_id came from the last/old one 
-        $data['body'] = "Ada yang menggunakan Akun Anda untuk melakukan Ujian di perangkat lain.\n\n";
-        $data['body'] .= "Jenis Perangkat :\n";
-        $data['body'] .= "- Samsung Galaxy S23\n\n";
-        $data['body'] .= "Note :\n";
-        $data['body'] .= "- Untuk keamanan, silahkan Anda ganti password terlebih dahulu\n";
-        $data['body'] .= "- Lalu masuk kembali ke Menu Ujian\n";
-        MyFunc::create_notif_exam_disruption((object) $data);
+        // self::_send_notif_exam_disruption(400);
+        // self::_send_notif_exam_finish(400);
         return jsonr(['message' => "Rynest => Admin API v1x"]);
-
-
     }
 
     public function schedule(Request $request)
@@ -533,7 +523,7 @@ class Exam_v1
         // SESSION CHECK STAGE
         // ===================
         if (self::_check_session_same_device($data->schedule_request_id, $id_member, $device_id) == false) {
-            self::_send_notif_exam_disruption($data->schedule_request_id, $id_member, $device_id, $user_id);
+            self::_send_notif_exam_disruption($user_id);
         }
 
         // MIDDLE STAGE (Main Process)
@@ -935,6 +925,9 @@ class Exam_v1
 
             Db::commit();
 
+            // Send Notification
+            self::_send_notif_exam_finish($user_id);
+
             // LAST STAGE (Output Process)
             // ===========================
             $result = ['message' => 'done'];
@@ -1189,43 +1182,61 @@ class Exam_v1
         }
     }
 
-    private function _send_notif_exam_disruption(int $schedule_request_id, int $id_member, string $device_id, int $user_id)
+    // Template Notification for Exam Finish
+    private function _send_notif_exam_disruption(int $user_id)
     {
         try {
-            $sessionId = "exam-session-{$schedule_request_id}-{$id_member}";
-            // $ret = null;
-            // $ret = Redis::exists($sessionId);
-            // $ret = Redis::get($sessionId);
-            $ret = Db::table('exam_session_apps')
-                ->selectRaw('id, data')
-                ->where('id', $sessionId)
-                ->first();
-
-            // if session exists
-            if ($ret != null) {
-                // check last device with current device
-                if ($ret->data != $device_id) {
-                    // if not the same then send kill notif to the last device
-                    $device_id = $ret->data;
-                    $data['user_id'] = $user_id;
-                    $data['device_id'] = $device_id;        // for disruption: device_id came from the last/old one 
-                    $data['body'] = "Ada yang menggunakan Akun Anda untuk melakukan Ujian di perangkat lain.\n\n";
-                    $data['body'] .= "Jenis Perangkat :\n";
-                    $data['body'] .= "- Samsung Galaxy S23\n\n";
-                    $data['body'] .= "Note :\n";
-                    $data['body'] .= "- Untuk keamanan, silahkan Anda ganti password terlebih dahulu\n";
-                    $data['body'] .= "- Lalu masuk kembali ke Menu Ujian\n";
-                    MyFunc::create_notif_exam_disruption((object) $data);
-                }
-            }
+            $data = new stdClass;
+            $data->topic = "exam";  // system|promotion|chat|reminder|transaction|document|emergency|location|group|travel| other topic become a announcement
+            $data->title = "Exam Disruption";
+            $data->body = "Ada yang menggunakan Akun Anda untuk melakukan Ujian di perangkat lain.\n\n";
+            $data->body .= "Note :\n";
+            $data->body .= "- Untuk keamanan, silahkan Anda ganti password terlebih dahulu\n";
+            $data->body .= "- Lalu masuk kembali ke Menu Ujian\n";
+            $data->body .= "- Abaikan jika memang itu perangkat Anda\n";
+            $data->image = null;
+            $data->payload = null;
+            $data->priority = "high";               // critical, high, normal
+            $data->action_type = "close_exam";
+            $data->action_value = null;
+            $data->target_type = "SPECIFIC_USER";   // ALL, GUEST, USER, SPECIFIC_USER, SPECIFIC_GUEST, SPECIFIC_GROUP
+            $data->user_id = $user_id;
+            $data->device_id = null;
+            $data->group_id = null;
+            $data->publish_at = null;
+            $data->expired_at = null;
+            MyFunc::create_notif($data);
         } catch (\Throwable $th) {
-            // Became true when Redis Error, because we think session does not exists.
-            //throw $th;
-            return true;
+            // throw $e;
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
         }
     }
 
-
+    // Template Notification for Exam Finish
+    private function _send_notif_exam_finish(int $user_id)
+    {
+        try {
+            $data = new stdClass;
+            $data->topic = "exam";  // system|promotion|chat|reminder|transaction|document|emergency|location|group|travel| other topic become a announcement
+            $data->title = "Ujian Sertifikasi AASI";
+            $data->body = "Terima kasih Anda telah menyelesaikan Ujian Sertifikasi AASI.";
+            $data->image = null;
+            $data->payload = null;
+            $data->priority = "normal";               // critical, high, normal
+            $data->action_type = null;
+            $data->action_value = null;
+            $data->target_type = "SPECIFIC_USER";   // ALL, GUEST, USER, SPECIFIC_USER, SPECIFIC_GUEST, SPECIFIC_GROUP
+            $data->user_id = $user_id;
+            $data->device_id = null;
+            $data->group_id = null;
+            $data->publish_at = null;
+            $data->expired_at = null;
+            MyFunc::create_notif($data);
+        } catch (\Throwable $th) {
+            // throw $e;
+            return jsonr(["message" => $th->getMessage(), "trace" => $th->getTrace()], $th->getCode());
+        }
+    }
 
     public function photos(Request $request)
     {

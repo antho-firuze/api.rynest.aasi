@@ -238,32 +238,6 @@ class MyFunc
         $pusher->trigger($channel_name, $event, $data, $socket_id);
     }
 
-    // Template Notification for Exam Disruption
-    static function create_notif_exam_disruption(object $data): array
-    {
-        try {
-            $data->topic = "exam";  // system|promotion|chat|reminder|transaction|document|emergency|location|group|travel| other topic become a announcement
-            $data->title = "Exam Disruption";
-            $data->body = $data->body ?? "Ada yang menggunakan Akun Anda untuk melakukan Ujian di perangkat lain.";
-            $data->image = null;
-            $data->payload = null;
-            $data->priority = "high";               // critical, high, normal
-            $data->action_type = "close_exam";
-            $data->action_value = "";
-            $data->target_type = "SPECIFIC_USER";   // ALL, GUEST, USER, SPECIFIC_USER, SPECIFIC_GUEST, SPECIFIC_GROUP
-            $data->user_id = $data->user_id;
-            $data->device_id = $data->device_id;
-            $data->group_id = null;
-            $data->publish_at = null;
-            $data->expired_at = null;
-
-            $result =  MyFunc::create_notif($data);
-            return $result;
-        } catch (\Throwable $e) {
-            throw $e;
-        }
-    }
-
     // create new notif save to database and send_notif to user
     static function create_notif(object $data): array
     {
