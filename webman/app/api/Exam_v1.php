@@ -1223,7 +1223,7 @@ class Exam_v1
             $data->image = null;
             $data->payload = null;
             $data->priority = "normal";               // critical, high, normal
-            $data->action_type = null;
+            $data->action_type = "exam_finish";
             $data->action_value = null;
             $data->target_type = "SPECIFIC_USER";   // ALL, GUEST, USER, SPECIFIC_USER, SPECIFIC_GUEST, SPECIFIC_GROUP
             $data->user_id = $user_id;

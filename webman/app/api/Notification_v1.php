@@ -279,7 +279,7 @@ class Notification_v1
             $inputValidator = v::attribute('id', v::stringType()->noWhitespace()->notEmpty())
                 ->attribute('name', v::stringType()->notEmpty())
                 ->attribute('platform', v::stringType()->notEmpty())
-                ->attribute('user_id', v::nullable(v::stringType()->noWhitespace()->notEmpty()), false);
+                ->attribute('user_id', v::nullable(v::intType()->notEmpty()), false);
             $inputValidator->assert($data);
         } catch (NestedValidationException $e) {
             $errAttr = $e->getMessages($this->validatorDesc);
