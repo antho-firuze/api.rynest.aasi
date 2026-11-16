@@ -969,19 +969,19 @@ class Exam_v1
         Db::beginTransaction();
         try {
             // Get from Redis
-            // $redisKey = "exam-question-{$data->question_id}";
-            // $question = Redis::get($redisKey);
-            // if ($question == null) {
-            $question = Db::table('questions')
-                ->selectRaw('id, question, answer_option_a, answer_option_b, answer_option_c, answer_option_d, answer_key')
-                ->where('id', $data->question_id ?? null)
-                ->first();
+            $redisKey = "exam-question-{$data->question_id}";
+            $question = Redis::get($redisKey);
+            if ($question == null) {
+                $question = Db::table('questions')
+                    ->selectRaw('id, question, answer_option_a, answer_option_b, answer_option_c, answer_option_d, answer_key')
+                    ->where('id', $data->question_id ?? null)
+                    ->first();
 
-            // Save to Redis
-            //     Redis::set($redisKey, json_encode($question));
-            // } else {
-            //     $question = json_decode($question);
-            // }
+                // Save to Redis
+                Redis::set($redisKey, json_encode($question));
+            } else {
+                $question = json_decode($question);
+            }
 
             // Shuffel the choices
             $question = self::_shuffled_options($question, $data->shuffle);
